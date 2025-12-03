@@ -1,0 +1,85 @@
+<%- include('../partials/header', { title: 'Dashboard de Reportes' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Dashboard de Reportes y Análisis</h1>
+
+<div class="filtros">
+    <form method="GET" class="form-inline">
+        <div class="form-group">
+            <label>Desde:</label>
+            <input type="date" name="fechaInicio" value="<%= fechaInicio %>">
+        </div>
+        <div class="form-group">
+            <label>Hasta:</label>
+            <input type="date" name="fechaFin" value="<%= fechaFin %>">
+        </div>
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+    </form>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>Total Reservas</h3>
+        <p class="stat-number"><%= totalReservas %></p>
+    </div>
+    <div class="stat-card">
+        <h3>Reservas Confirmadas</h3>
+        <p class="stat-number"><%= reservasConfirmadas %></p>
+    </div>
+    <div class="stat-card">
+        <h3>Ingresos Totales</h3>
+        <p class="stat-number">$<%= parseFloat(ingresosTotales || 0).toLocaleString() %></p>
+    </div>
+    <div class="stat-card">
+        <h3>Satisfacción Promedio</h3>
+        <p class="stat-number"><%= promedioSatisfaccion.toFixed(2) %>/5</p>
+    </div>
+</div>
+
+<% if (typeof ocupacionPorCabana !== 'undefined' && Object.keys(ocupacionPorCabana).length > 0) { %>
+<h2>Ocupación por Cabaña</h2>
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Cabaña</th>
+                <th>Reservas</th>
+                <th>Ingresos</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% Object.entries(ocupacionPorCabana).forEach(([nombre, datos]) => { %>
+            <tr>
+                <td><%= nombre %></td>
+                <td><%= datos.reservas || 0 %></td>
+                <td>$<%= parseFloat(datos.ingresos || 0).toLocaleString() %></td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</div>
+<% } %>
+
+<% if (typeof clientesFrecuentes !== 'undefined' && clientesFrecuentes.length > 0) { %>
+<h2>Clientes Más Frecuentes</h2>
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Cliente</th>
+                <th>Total Reservas</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% clientesFrecuentes.forEach(cliente => { %>
+            <tr>
+                <td><%= cliente.nombre || 'N/A' %></td>
+                <td><%= cliente.reservas || 0 %></td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</div>
+<% } %>
+
+<%- include('../partials/footer') %>

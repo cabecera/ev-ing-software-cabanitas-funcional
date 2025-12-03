@@ -1,0 +1,45 @@
+<%- include('../partials/header', { title: 'Crear Mantenimiento' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Crear Mantenimiento</h1>
+
+<% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-error"><%= error %></div>
+<% } %>
+
+<form method="POST" action="/mantenimientos/crear" class="form">
+    <div class="form-group">
+        <label for="cabanaId">Cabaña:</label>
+        <select id="cabanaId" name="cabanaId" required>
+            <option value="">Seleccione una cabaña</option>
+            <% cabanas.forEach(cabana => { %>
+                <option value="<%= cabana.id %>"><%= cabana.nombre %></option>
+            <% }); %>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="fechaInicio">Fecha de Inicio:</label>
+        <input type="date" id="fechaInicio" name="fechaInicio" required>
+    </div>
+
+    <div class="form-group">
+        <label for="fechaFin">Fecha de Fin:</label>
+        <input type="date" id="fechaFin" name="fechaFin" required>
+    </div>
+
+    <div class="form-group">
+        <label for="tipo">Tipo:</label>
+        <input type="text" id="tipo" name="tipo" required>
+    </div>
+
+    <div class="form-group">
+        <label for="descripcion">Descripción:</label>
+        <textarea id="descripcion" name="descripcion" rows="4"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Crear Mantenimiento</button>
+    <a href="/mantenimientos" class="btn btn-secondary">Cancelar</a>
+</form>
+
+<%- include('../partials/footer') %>

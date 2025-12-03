@@ -1,0 +1,40 @@
+<%- include('../partials/header', { title: 'Crear Cabaña' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Crear Nueva Cabaña</h1>
+
+<% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-error"><%= error %></div>
+<% } %>
+
+<form method="POST" action="/cabanas/crear" class="form">
+    <div class="form-group">
+        <label for="nombre">Nombre:</label>
+        <input type="text" id="nombre" name="nombre" required>
+    </div>
+
+    <div class="form-group">
+        <label for="capacidad">Capacidad:</label>
+        <input type="number" id="capacidad" name="capacidad" min="1" required>
+    </div>
+
+    <div class="form-group">
+        <label for="precioNoche">Precio por Noche:</label>
+        <input type="number" id="precioNoche" name="precioNoche" step="0.01" min="0" required>
+    </div>
+
+    <div class="form-group">
+        <label for="descripcion">Descripción:</label>
+        <textarea id="descripcion" name="descripcion" rows="4"></textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="fotos">Fotos (separadas por comas):</label>
+        <input type="text" id="fotos" name="fotos" placeholder="/images/cabana1.jpg,/images/cabana2.jpg">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Crear Cabaña</button>
+    <a href="/cabanas" class="btn btn-secondary">Cancelar</a>
+</form>
+
+<%- include('../partials/footer') %>

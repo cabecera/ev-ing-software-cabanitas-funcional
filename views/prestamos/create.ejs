@@ -1,0 +1,133 @@
+<%- include('../partials/header', { title: 'Solicitar Préstamo' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Solicitar Préstamo de Implemento</h1>
+
+<% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-error"><%= error %></div>
+<% } %>
+
+<%
+// Preparar datos de implementos para JavaScript
+const implementosData = implementos.map(impl => ({
+    id: impl.id,
+    nombre: impl.nombre,
+    precioPrestamo: parseFloat(impl.precioPrestamo || 0),
+    stockDisponible: impl.stockDisponible
+}));
+%>
+
+<script>
+    const implementosData = <%- JSON.stringify(implementosData) %>;
+
+    function calcularMontoTotal() {
+        const implementoId = parseInt(document.getElementById('implementoId').value);
+        const cantidad = parseInt(document.getElementById('cantidad').value) || 0;
+        const montoTotalSpan = document.getElementById('montoTotal');
+        const seccionPago = document.getElementById('seccionPago');
+        const metodoPagoSelect = document.getElementById('metodoPago');
+
+        if (implementoId && cantidad > 0) {
+            const implemento = implementosData.find(impl => impl.id === implementoId);
+            if (implemento) {
+                const montoTotal = implemento.precioPrestamo * cantidad;
+                montoTotalSpan.textContent = '$' + montoTotal.toLocaleString();
+
+                if (montoTotal > 0) {
+                    seccionPago.style.display = 'block';
+                    metodoPagoSelect.setAttribute('required', 'required');
+                } else {
+                    seccionPago.style.display = 'none';
+                    metodoPagoSelect.removeAttribute('required');
+                    metodoPagoSelect.value = '';
+                }
+                return;
+            }
+        }
+
+        montoTotalSpan.textContent = '$0';
+        seccionPago.style.display = 'none';
+        metodoPagoSelect.removeAttribute('required');
+        metodoPagoSelect.value = '';
+    }
+
+    // Validación del formulario antes de enviar
+    function validarFormulario(e) {
+        const implementoId = parseInt(document.getElementById('implementoId').value);
+        const cantidad = parseInt(document.getElementById('cantidad').value) || 0;
+
+        if (implementoId && cantidad > 0) {
+            const implemento = implementosData.find(impl => impl.id === implementoId);
+            if (implemento) {
+                const montoTotal = implemento.precioPrestamo * cantidad;
+                const metodoPago = document.getElementById('metodoPago').value;
+
+                if (montoTotal > 0 && !metodoPago) {
+                    e.preventDefault();
+                    alert('Debe seleccionar un método de pago');
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        document.getElementById('implementoId').addEventListener('change', calcularMontoTotal);
+        document.getElementById('cantidad').addEventListener('input', calcularMontoTotal);
+        form.addEventListener('submit', validarFormulario);
+        calcularMontoTotal();
+    });
+</script>
+
+<form method="POST" action="/prestamos/solicitar" class="form">
+    <div class="form-group">
+        <label for="implementoId">Implemento:</label>
+        <select id="implementoId" name="implementoId" required>
+            <option value="">Seleccione un implemento</option>
+            <% implementos.forEach(impl => { %>
+                <option value="<%= impl.id %>"
+                        data-precio="<%= parseFloat(impl.precioPrestamo || 0) %>"
+                        data-stock="<%= impl.stockDisponible %>">
+                    <%= impl.nombre %> - Stock disponible: <%= impl.stockDisponible %>
+                    <% if (impl.precioPrestamo > 0) { %>
+                        - $<%= parseFloat(impl.precioPrestamo).toLocaleString() %> por unidad
+                    <% } else { %>
+                        - Gratis
+                    <% } %>
+                </option>
+            <% }); %>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="cantidad">Cantidad:</label>
+        <input type="number" id="cantidad" name="cantidad" min="1" required>
+    </div>
+
+    <!-- Sección de Pago -->
+    <div id="seccionPago" style="display: none; background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin: 2rem 0;">
+        <h2>Detalles del Pago</h2>
+        <div class="form-group">
+            <p><strong>Monto Total:</strong> <span id="montoTotal" style="font-size: 1.25rem; font-weight: bold; color: #28a745;">$0</span></p>
+        </div>
+
+        <div class="form-group">
+            <label for="metodoPago">Método de Pago:</label>
+            <select id="metodoPago" name="metodoPago">
+                <option value="">Seleccione un método</option>
+                <option value="transferencia">Transferencia Bancaria</option>
+                <option value="tarjeta">Tarjeta de Crédito/Débito</option>
+                <option value="efectivo">Efectivo (al llegar)</option>
+            </select>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-success" style="font-size: 1.1rem; padding: 1rem 2rem;">
+        ✓ Pagar y Solicitar Préstamo
+    </button>
+    <a href="/prestamos/mis-prestamos" class="btn btn-secondary">Cancelar</a>
+</form>
+
+<%- include('../partials/footer') %>

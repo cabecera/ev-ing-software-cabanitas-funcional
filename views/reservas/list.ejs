@@ -1,0 +1,57 @@
+<%- include('../partials/header', { title: 'Reservas' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Reservas</h1>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Cliente</th>
+                <th>Cabaña</th>
+                <th>Fecha Inicio</th>
+                <th>Fecha Fin</th>
+                <th>Monto</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% reservas.forEach(reserva => { %>
+            <tr>
+                <td><%= reserva.cliente.nombre %> <%= reserva.cliente.apellido %></td>
+                <td><%= reserva.cabana.nombre %></td>
+                <td><%= new Date(reserva.fechaInicio).toLocaleDateString() %></td>
+                <td><%= new Date(reserva.fechaFin).toLocaleDateString() %></td>
+                <td>$<%= parseFloat(reserva.montoCotizado).toLocaleString() %></td>
+                <td>
+                    <span class="badge badge-<%= reserva.estado %>"><%= reserva.estado %></span>
+                    <% if ((reserva.estado === 'pendiente' || reserva.estado === 'confirmada') && (!reserva.pago || reserva.pago.estado !== 'completado')) { %>
+                        <br><span class="badge badge-warning" style="margin-top: 0.25rem;">Falta el pago</span>
+                    <% } %>
+                </td>
+                <td>
+                    <% if (reserva.estado === 'pendiente') { %>
+                        <form method="POST" action="/reservas/<%= reserva.id %>/confirmar" style="display: inline;">
+                            <button type="submit" class="btn btn-success btn-sm">Confirmar</button>
+                        </form>
+                        <form method="POST" action="/reservas/<%= reserva.id %>/cancelar" style="display: inline;">
+                            <button type="submit" class="btn btn-danger btn-sm">Cancelar</button>
+                        </form>
+                        <% if (!reserva.pago || reserva.pago.estado !== 'completado') { %>
+                            <a href="/pagos/registrar?reservaId=<%= reserva.id %>" class="btn btn-primary btn-sm">Registrar Pago</a>
+                        <% } %>
+                    <% } %>
+                    <% if (reserva.estado === 'confirmada') { %>
+                        <form method="POST" action="/encargado/preparacion/<%= reserva.id %>/iniciar" style="display: inline;">
+                            <button type="submit" class="btn btn-info btn-sm">Iniciar Prep.</button>
+                        </form>
+                    <% } %>
+                </td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</div>
+
+<%- include('../partials/footer') %>

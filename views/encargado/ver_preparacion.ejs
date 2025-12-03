@@ -1,0 +1,32 @@
+<%- include('../partials/header', { title: 'Preparación de Cabaña' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Preparación de Cabaña</h1>
+
+<div class="preparacion-info">
+    <h2>Información de la Reserva</h2>
+    <p><strong>Cabaña:</strong> <%= preparacion.cabana.nombre %></p>
+    <p><strong>Cliente:</strong> <%= preparacion.reserva.cliente.nombre %> <%= preparacion.reserva.cliente.apellido %></p>
+    <p><strong>Fecha Inicio:</strong> <%= new Date(preparacion.reserva.fechaInicio).toLocaleDateString() %></p>
+    <p><strong>Estado:</strong> <span class="badge badge-<%= preparacion.estado %>"><%= preparacion.estado %></span></p>
+</div>
+
+<h2>Tareas de Preparación</h2>
+<div class="tareas-list">
+    <% preparacion.tareasCompletadas.forEach(item => { %>
+    <div class="tarea-item <%= item.completado ? 'completada' : '' %>">
+        <h3><%= item.tarea.nombre %></h3>
+        <p><%= item.tarea.descripcion %></p>
+        <% if (!item.completado) { %>
+            <form method="POST" action="/encargado/preparacion/<%= preparacion.id %>/tarea/<%= item.tareaId %>/completar" style="display: inline;">
+                <button type="submit" class="btn btn-success">Marcar como Completada</button>
+            </form>
+        <% } else { %>
+            <span class="badge badge-success">Completada</span>
+            <p><small>Completada el: <%= new Date(item.fechaCompletado).toLocaleString() %></small></p>
+        <% } %>
+    </div>
+    <% }); %>
+</div>
+
+<%- include('../partials/footer') %>

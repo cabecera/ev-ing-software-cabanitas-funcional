@@ -1,0 +1,51 @@
+<%- include('../partials/header', { title: 'Implementos' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Implementos</h1>
+
+<% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
+    <button onclick="document.getElementById('createForm').style.display='block'" class="btn btn-primary">Nuevo Implemento</button>
+
+    <div id="createForm" style="display:none; margin: 20px 0;">
+        <form method="POST" action="/implementos/crear" class="form">
+            <div class="form-group">
+                <label for="nombre">Nombre:</label>
+                <input type="text" id="nombre" name="nombre" required>
+            </div>
+            <div class="form-group">
+                <label for="stockTotal">Stock Total:</label>
+                <input type="number" id="stockTotal" name="stockTotal" min="0" required>
+            </div>
+            <div class="form-group">
+                <label for="precioPrestamo">Precio Préstamo:</label>
+                <input type="number" id="precioPrestamo" name="precioPrestamo" step="0.01" min="0">
+            </div>
+            <button type="submit" class="btn btn-primary">Crear</button>
+        </form>
+    </div>
+<% } %>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Stock Total</th>
+                <th>Stock Disponible</th>
+                <th>Precio Préstamo</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% implementos.forEach(impl => { %>
+            <tr>
+                <td><%= impl.nombre %></td>
+                <td><%= impl.stockTotal %></td>
+                <td><%= impl.stockDisponible %></td>
+                <td>$<%= parseFloat(impl.precioPrestamo || 0).toLocaleString() %></td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</div>
+
+<%- include('../partials/footer') %>

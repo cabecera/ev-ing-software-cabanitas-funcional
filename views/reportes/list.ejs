@@ -1,0 +1,38 @@
+<%- include('../partials/header', { title: 'Reportes' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Reportes de Faltantes</h1>
+<a href="/reportes/crear" class="btn btn-primary">Nuevo Reporte</a>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Cabaña</th>
+                <th>Fecha</th>
+                <th>Descripción</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% reportes.forEach(reporte => { %>
+            <tr>
+                <td><%= reporte.cabana.nombre %></td>
+                <td><%= new Date(reporte.fecha).toLocaleDateString() %></td>
+                <td><%= reporte.descripcion %></td>
+                <td><span class="badge badge-<%= reporte.estado %>"><%= reporte.estado %></span></td>
+                <td>
+                    <% if (reporte.estado === 'pendiente') { %>
+                        <form method="POST" action="/reportes/<%= reporte.id %>/resolver" style="display: inline;">
+                            <button type="submit" class="btn btn-success btn-sm">Resolver</button>
+                        </form>
+                    <% } %>
+                </td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</div>
+
+<%- include('../partials/footer') %>

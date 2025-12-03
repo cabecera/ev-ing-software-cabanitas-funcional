@@ -1,0 +1,53 @@
+<%- include('../partials/header', { title: 'Pagar Reserva' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Pagar Reserva</h1>
+
+<div class="reserva-info" style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+    <h2>Detalles de la Reserva</h2>
+    <p><strong>Cabaña:</strong> <%= reserva.cabana ? reserva.cabana.nombre : 'N/A' %></p>
+    <p><strong>Fecha Inicio:</strong> <%= new Date(reserva.fechaInicio).toLocaleDateString() %></p>
+    <p><strong>Fecha Fin:</strong> <%= new Date(reserva.fechaFin).toLocaleDateString() %></p>
+    <p><strong>Monto Total:</strong> <span style="font-size: 1.25rem; font-weight: bold; color: #28a745;">$<%= parseFloat(reserva.montoCotizado).toLocaleString() %></span></p>
+
+    <% if (reserva.pago && reserva.pago.estado === 'completado') { %>
+        <div style="margin-top: 1rem; padding: 1rem; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px;">
+            <p><strong>✅ Pago Completado</strong></p>
+            <p>Monto: $<%= parseFloat(reserva.pago.monto).toLocaleString() %></p>
+            <p>Fecha: <%= new Date(reserva.pago.fechaPago).toLocaleString() %></p>
+        </div>
+    <% } else if (reserva.pago) { %>
+        <p><strong>Pago Parcial:</strong> $<%= parseFloat(reserva.pago.monto).toLocaleString() %></p>
+        <p><strong>Pendiente:</strong> $<%= (parseFloat(reserva.montoCotizado) - parseFloat(reserva.pago.monto || 0)).toLocaleString() %></p>
+    <% } %>
+</div>
+
+<% if (!reserva.pago || reserva.pago.estado !== 'completado') { %>
+<form method="POST" action="/pagos/reserva/<%= reserva.id %>/procesar" class="form">
+    <div class="form-group">
+        <label for="metodoPago">Método de Pago:</label>
+        <select id="metodoPago" name="metodoPago" required>
+            <option value="">Seleccione un método</option>
+            <option value="transferencia">Transferencia Bancaria</option>
+            <option value="tarjeta">Tarjeta de Crédito/Débito</option>
+            <option value="efectivo">Efectivo (al llegar)</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <p><strong>Monto a Pagar:</strong> <span style="font-size: 1.1rem; font-weight: bold;">$<%= parseFloat(reserva.montoCotizado).toLocaleString() %></span></p>
+    </div>
+
+    <button type="submit" class="btn btn-success" style="font-size: 1.1rem; padding: 1rem 2rem;">
+        ✓ Confirmar Pago
+    </button>
+    <a href="/reservas/mis-reservas" class="btn btn-secondary">Cancelar</a>
+</form>
+<% } else { %>
+    <div style="text-align: center; padding: 2rem;">
+        <p style="font-size: 1.25rem; color: #28a745;">✅ Esta reserva ya ha sido pagada</p>
+        <a href="/reservas/mis-reservas" class="btn btn-primary">Volver a Mis Reservas</a>
+    </div>
+<% } %>
+
+<%- include('../partials/footer') %>

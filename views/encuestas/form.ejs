@@ -1,0 +1,81 @@
+<%- include('../partials/header', { title: 'Encuesta de Satisfacción' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Encuesta de Satisfacción</h1>
+
+<div class="reserva-info">
+    <h2>Reserva</h2>
+    <p><strong>Cabaña:</strong> <%= reserva.cabana.nombre %></p>
+    <p><strong>Fecha:</strong> <%= new Date(reserva.fechaInicio).toLocaleDateString() %> - <%= new Date(reserva.fechaFin).toLocaleDateString() %></p>
+</div>
+
+<form method="POST" action="/encuestas/<%= reserva.id %>" class="form">
+    <h3>Calificación General</h3>
+    <div class="form-group">
+        <label>Calificación General (1-5):</label>
+        <select name="calificacionGeneral" required>
+            <option value="">Seleccione</option>
+            <option value="5">5 - Excelente</option>
+            <option value="4">4 - Muy Bueno</option>
+            <option value="3">3 - Bueno</option>
+            <option value="2">2 - Regular</option>
+            <option value="1">1 - Malo</option>
+        </select>
+    </div>
+
+    <h3>Calificaciones Específicas</h3>
+    <div class="form-group">
+        <label>Limpieza (1-5):</label>
+        <select name="calificacionLimpieza">
+            <option value="">No calificar</option>
+            <option value="5">5 - Excelente</option>
+            <option value="4">4 - Muy Bueno</option>
+            <option value="3">3 - Bueno</option>
+            <option value="2">2 - Regular</option>
+            <option value="1">1 - Malo</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Servicio (1-5):</label>
+        <select name="calificacionServicio">
+            <option value="">No calificar</option>
+            <option value="5">5 - Excelente</option>
+            <option value="4">4 - Muy Bueno</option>
+            <option value="3">3 - Bueno</option>
+            <option value="2">2 - Regular</option>
+            <option value="1">1 - Malo</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Precio/Valor (1-5):</label>
+        <select name="calificacionPrecio">
+            <option value="">No calificar</option>
+            <option value="5">5 - Excelente</option>
+            <option value="4">4 - Muy Bueno</option>
+            <option value="3">3 - Bueno</option>
+            <option value="2">2 - Regular</option>
+            <option value="1">1 - Malo</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>¿Recomendaría nuestro servicio?</label>
+        <select name="recomendaria" required>
+            <option value="">Seleccione</option>
+            <option value="true">Sí</option>
+            <option value="false">No</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Comentarios adicionales:</label>
+        <textarea name="comentarios" rows="4" placeholder="Cuéntanos tu experiencia..."></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Enviar Encuesta</button>
+    <a href="/reservas/mis-reservas" class="btn btn-secondary">Cancelar</a>
+</form>
+
+<%- include('../partials/footer') %>

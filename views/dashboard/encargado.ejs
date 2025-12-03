@@ -1,0 +1,34 @@
+<%- include('../partials/header', { title: 'Dashboard Encargado' }) %>
+<%- include('../partials/navbar') %>
+
+<div class="dashboard">
+        <h1>Dashboard Encargado</h1>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Preparaciones Pendientes</h3>
+                <p class="stat-number"><%= stats.preparacionesPendientes %></p>
+            </div>
+        </div>
+
+        <div class="actions-section">
+            <a href="/encargado/reservas-confirmadas" class="btn btn-primary">Ver Reservas Confirmadas</a>
+            <a href="/encargado/preparaciones" class="btn btn-secondary">Ver Preparaciones</a>
+            <a href="/encargado/trabajadores" class="btn btn-secondary">Gestionar Trabajadores</a>
+        </div>
+
+        <% if (notificaciones && notificaciones.length > 0) { %>
+        <div class="notifications-section">
+            <h2>Notificaciones Recientes</h2>
+            <ul class="notification-list">
+                <% notificaciones.forEach(notif => { %>
+                <li class="notification-item">
+                    <strong><%= notif.titulo %></strong>
+                    <p><%= notif.mensaje %></p>
+                </li>
+                <% }); %>
+            </ul>
+        </div>
+        <% } %>
+</div>
+<%- include('../partials/footer') %>

@@ -1,0 +1,38 @@
+<%- include('../partials/header', { title: 'Mis Préstamos' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Mis Préstamos</h1>
+<a href="/prestamos/solicitar" class="btn btn-primary">Nuevo Préstamo</a>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Implemento</th>
+                <th>Cantidad</th>
+                <th>Fecha Préstamo</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% prestamos.forEach(prestamo => { %>
+            <tr>
+                <td><%= prestamo.implemento.nombre %></td>
+                <td><%= prestamo.cantidad %></td>
+                <td><%= new Date(prestamo.fechaPrestamo).toLocaleDateString() %></td>
+                <td><span class="badge badge-<%= prestamo.estado %>"><%= prestamo.estado %></span></td>
+                <td>
+                    <% if (prestamo.estado === 'activo') { %>
+                        <form method="POST" action="/prestamos/<%= prestamo.id %>/devolver" style="display: inline;">
+                            <button type="submit" class="btn btn-success btn-sm">Devolver</button>
+                        </form>
+                    <% } %>
+                </td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</div>
+
+<%- include('../partials/footer') %>

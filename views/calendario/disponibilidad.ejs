@@ -1,0 +1,143 @@
+<%- include('../partials/header', { title: 'Calendario de Disponibilidad' }) %>
+<%- include('../partials/navbar') %>
+
+<div class="page-header">
+    <h1>Calendario de Disponibilidad</h1>
+    <div class="calendar-nav">
+        <a href="/calendario/disponibilidad?mes=<%= mesActual - 1 %>&anio=<%= anioActual %>" class="btn btn-secondary">Mes Anterior</a>
+        <span class="calendar-month"><%= new Date(anioActual, mesActual - 1).toLocaleString('es-ES', { month: 'long', year: 'numeric' }) %></span>
+        <a href="/calendario/disponibilidad?mes=<%= mesActual + 1 %>&anio=<%= anioActual %>" class="btn btn-secondary">Mes Siguiente</a>
+    </div>
+</div>
+
+<div class="calendar-legend">
+    <span class="legend-item disponible">Disponible</span>
+    <span class="legend-item reservada">Reservada</span>
+    <span class="legend-item mantenimiento">Mantenimiento</span>
+</div>
+
+<div class="calendar-container">
+    <table class="calendar-table">
+        <thead>
+            <tr>
+                <th>Cabaña / Día</th>
+                <% for (let dia = 1; dia <= disponibilidad.length; dia++) { %>
+                    <th><%= dia %></th>
+                <% } %>
+            </tr>
+        </thead>
+        <tbody>
+            <% cabanas.forEach(cabana => { %>
+            <tr>
+                <td class="cabana-name"><%= cabana.nombre %></td>
+                <% disponibilidad.forEach(diaInfo => { %>
+                    <td class="calendar-cell <%= diaInfo.cabanas[cabana.id].disponible ? 'disponible' : diaInfo.cabanas[cabana.id].motivo.toLowerCase().replace(' ', '-') %>"
+                        title="<%= diaInfo.cabanas[cabana.id].motivo || 'Disponible' %>">
+                    </td>
+                <% }); %>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</div>
+
+<style>
+.calendar-nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.calendar-month {
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-transform: capitalize;
+}
+
+.calendar-legend {
+    margin: 1rem 0;
+    display: flex;
+    gap: 1rem;
+}
+
+.legend-item {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+}
+
+.legend-item.disponible {
+    background-color: #28a745;
+    color: white;
+}
+
+.legend-item.reservada {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.legend-item.mantenimiento {
+    background-color: #dc3545;
+    color: white;
+}
+
+.calendar-container {
+    overflow-x: auto;
+    margin: 2rem 0;
+}
+
+.calendar-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.calendar-table th,
+.calendar-table td {
+    padding: 0.5rem;
+    text-align: center;
+    border: 1px solid #dee2e6;
+}
+
+.calendar-table th {
+    background-color: var(--dark-color);
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.cabana-name {
+    font-weight: bold;
+    text-align: left;
+    position: sticky;
+    left: 0;
+    background-color: white;
+    z-index: 5;
+}
+
+.calendar-cell {
+    min-width: 30px;
+    height: 30px;
+    cursor: pointer;
+}
+
+.calendar-cell.disponible {
+    background-color: #28a745;
+}
+
+.calendar-cell.reservada {
+    background-color: #ffc107;
+}
+
+.calendar-cell.mantenimiento {
+    background-color: #dc3545;
+}
+
+.calendar-cell:hover {
+    opacity: 0.8;
+    transform: scale(1.1);
+}
+</style>
+
+<%- include('../partials/footer') %>

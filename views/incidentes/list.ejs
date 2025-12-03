@@ -1,0 +1,95 @@
+<%- include('../partials/header', { title: 'Incidentes' }) %>
+<%- include('../partials/navbar') %>
+
+<h1><%= user.role === 'cliente' ? 'Mis' : '' %> Incidentes</h1>
+<% if (user.role === 'cliente') { %>
+    <a href="/incidentes/crear" class="btn btn-primary">Reportar Incidente</a>
+<% } %>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Cabaña</th>
+                <th>Tipo</th>
+                <th>Descripción</th>
+                <th>Estado</th>
+                <% if (user.role === 'admin') { %>
+                    <th>Cliente</th>
+                    <th>Solución Propuesta</th>
+                <% } else { %>
+                    <th>Solución</th>
+                <% } %>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% incidentes.forEach(incidente => { %>
+            <tr>
+                <td><%= incidente.cabana.nombre %></td>
+                <td><%= incidente.tipo %></td>
+                <td><%= incidente.descripcion.substring(0, 50) %>...</td>
+                <td><span class="badge badge-<%= incidente.estado %>"><%= incidente.estado %></span></td>
+                <% if (user.role === 'admin') { %>
+                    <td><%= incidente.cliente ? incidente.cliente.nombre + ' ' + incidente.cliente.apellido : 'N/A' %></td>
+                    <td><%= incidente.solucionPropuesta || '-' %></td>
+                <% } else { %>
+                    <td><%= incidente.solucionPropuesta || 'Pendiente' %></td>
+                <% } %>
+                <td>
+                    <% if (user.role === 'admin' && incidente.estado === 'pendiente') { %>
+                        <button onclick="mostrarSolucion(<%= incidente.id %>)" class="btn btn-primary btn-sm">Proponer Solución</button>
+                        <form method="POST" action="/incidentes/<%= incidente.id %>/resolver" style="display: inline;">
+                            <button type="submit" class="btn btn-success btn-sm">Resolver</button>
+                        </form>
+                    <% } %>
+                    <% if (user.role === 'cliente' && incidente.solucionPropuesta && !incidente.solucionAceptada && incidente.estado === 'en_revision') { %>
+                        <form method="POST" action="/incidentes/<%= incidente.id %>/responder" style="display: inline;">
+                            <input type="hidden" name="aceptar" value="true">
+                            <button type="submit" class="btn btn-success btn-sm">Aceptar</button>
+                        </form>
+                        <form method="POST" action="/incidentes/<%= incidente.id %>/responder" style="display: inline;">
+                            <input type="hidden" name="aceptar" value="false">
+                            <button type="submit" class="btn btn-danger btn-sm">Rechazar</button>
+                        </form>
+                    <% } %>
+                </td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</div>
+
+<% if (user.role === 'admin') { %>
+<div id="modalSolucion" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:2rem; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.3); z-index:1000;">
+    <h3>Proponer Solución</h3>
+    <form id="formSolucion" method="POST">
+        <div class="form-group">
+            <label>Solución:</label>
+            <select name="solucionPropuesta" required>
+                <option value="reprogramar">Reprogramar Reserva</option>
+                <option value="reembolso">Reembolso</option>
+                <option value="cambio_cabana">Cambio de Cabaña</option>
+                <option value="descuento">Descuento</option>
+                <option value="otro">Otro</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Enviar</button>
+        <button type="button" onclick="cerrarModal()" class="btn btn-secondary">Cancelar</button>
+    </form>
+</div>
+
+<script>
+let incidenteActual = null;
+function mostrarSolucion(id) {
+    incidenteActual = id;
+    document.getElementById('formSolucion').action = `/incidentes/${id}/proponer-solucion`;
+    document.getElementById('modalSolucion').style.display = 'block';
+}
+function cerrarModal() {
+    document.getElementById('modalSolucion').style.display = 'none';
+}
+</script>
+<% } %>
+
+<%- include('../partials/footer') %>

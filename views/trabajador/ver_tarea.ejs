@@ -1,0 +1,42 @@
+<%- include('../partials/header', { title: 'Detalle de Tarea' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Detalle de Tarea</h1>
+
+<div class="tarea-info">
+    <h2><%= tarea.tipo %></h2>
+    <p><strong>Descripción:</strong> <%= tarea.descripcion %></p>
+    <% if (tarea.cabana) { %>
+        <p><strong>Cabaña:</strong> <%= tarea.cabana.nombre %></p>
+    <% } %>
+    <p><strong>Fecha Asignada:</strong> <%= new Date(tarea.fechaAsignacion).toLocaleDateString() %></p>
+    <p><strong>Estado:</strong> <span class="badge badge-<%= tarea.estado %>"><%= tarea.estado %></span></p>
+    <% if (tarea.observaciones) { %>
+        <p><strong>Observaciones:</strong> <%= tarea.observaciones %></p>
+    <% } %>
+    <% if (tarea.reporteDanios || tarea.reporteDanos) { %>
+        <p><strong>Daños Reportados:</strong> <%= tarea.reporteDanios || tarea.reporteDanos %></p>
+    <% } %>
+</div>
+
+<% if (tarea.estado !== 'completada') { %>
+<form method="POST" action="/trabajador/tarea/<%= tarea.id %>/completar" class="form">
+    <div class="form-group">
+        <label for="observaciones">Observaciones:</label>
+        <textarea id="observaciones" name="observaciones" rows="3"></textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="reporteDanos">Reportar Daños o Faltantes (opcional):</label>
+        <textarea id="reporteDanos" name="reporteDanos" rows="3" placeholder="Describe cualquier daño o faltante encontrado..."></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-success">Marcar como Completada</button>
+    <a href="/trabajador/tareas" class="btn btn-secondary">Volver</a>
+</form>
+<% } else { %>
+    <p><strong>Completada el:</strong> <%= tarea.fechaCompletado ? new Date(tarea.fechaCompletado).toLocaleString() : 'No completada' %></p>
+    <a href="/trabajador/tareas" class="btn btn-secondary">Volver</a>
+<% } %>
+
+<%- include('../partials/footer') %>

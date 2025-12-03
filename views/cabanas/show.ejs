@@ -1,0 +1,24 @@
+<%- include('../partials/header', { title: cabana.nombre }) %>
+<%- include('../partials/navbar') %>
+
+<h1><%= cabana.nombre %></h1>
+
+<div class="cabana-details">
+    <p><strong>Capacidad:</strong> <%= cabana.capacidad %> personas</p>
+    <p><strong>Precio por noche:</strong> $<%= parseFloat(cabana.precioNoche).toLocaleString() %></p>
+    <p><strong>Estado:</strong>
+        <span class="badge badge-<%= cabana.estado %>"><%= cabana.estado %></span>
+    </p>
+    <p><strong>Descripción:</strong></p>
+    <p><%= cabana.descripcion %></p>
+
+    <% if (typeof user !== 'undefined' && user && user.role === 'cliente' && cabana.estado === 'disponible') { %>
+        <a href="/reservas/solicitar?cabanaId=<%= cabana.id %>" class="btn btn-primary">Reservar Ahora</a>
+    <% } %>
+
+    <% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
+        <a href="/cabanas/<%= cabana.id %>/editar" class="btn btn-secondary">Editar</a>
+    <% } %>
+</div>
+
+<%- include('../partials/footer') %>

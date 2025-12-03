@@ -1,0 +1,38 @@
+<%- include('../partials/header', { title: 'Registrar Pago' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Registrar Pago Manual</h1>
+
+<% if (typeof reserva !== 'undefined' && reserva) { %>
+<div class="reserva-info">
+    <h2>Reserva #<%= reserva.id %></h2>
+    <p><strong>Cliente:</strong> <%= reserva.cliente ? reserva.cliente.nombre + ' ' + reserva.cliente.apellido : 'N/A' %></p>
+    <p><strong>Cabaña:</strong> <%= reserva.cabana.nombre %></p>
+    <p><strong>Monto Total:</strong> $<%= parseFloat(reserva.montoCotizado).toLocaleString() %></p>
+</div>
+
+<form method="POST" action="/pagos/registrar" class="form">
+    <input type="hidden" name="reservaId" value="<%= reserva.id %>">
+
+    <div class="form-group">
+        <label for="monto">Monto:</label>
+        <input type="number" id="monto" name="monto" step="0.01" value="<%= reserva.montoCotizado %>" required>
+    </div>
+
+    <div class="form-group">
+        <label for="metodoPago">Método de Pago:</label>
+        <select id="metodoPago" name="metodoPago" required>
+            <option value="efectivo">Efectivo</option>
+            <option value="transferencia">Transferencia</option>
+            <option value="tarjeta">Tarjeta</option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Registrar Pago</button>
+    <a href="/reservas" class="btn btn-secondary">Cancelar</a>
+</form>
+<% } else { %>
+<p>No se encontró la reserva. <a href="/reservas">Volver a reservas</a></p>
+<% } %>
+
+<%- include('../partials/footer') %>

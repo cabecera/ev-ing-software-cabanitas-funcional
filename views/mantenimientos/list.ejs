@@ -1,0 +1,40 @@
+<%- include('../partials/header', { title: 'Mantenimientos' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Mantenimientos</h1>
+<a href="/mantenimientos/crear" class="btn btn-primary">Nuevo Mantenimiento</a>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Cabaña</th>
+                <th>Fecha Inicio</th>
+                <th>Fecha Fin</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% mantenimientos.forEach(mant => { %>
+            <tr>
+                <td><%= mant.cabana.nombre %></td>
+                <td><%= new Date(mant.fechaInicio).toLocaleDateString() %></td>
+                <td><%= new Date(mant.fechaFin).toLocaleDateString() %></td>
+                <td><%= mant.tipo %></td>
+                <td><span class="badge badge-<%= mant.estado %>"><%= mant.estado %></span></td>
+                <td>
+                    <% if (mant.estado !== 'completado' && mant.estado !== 'cancelado') { %>
+                        <form method="POST" action="/mantenimientos/<%= mant.id %>/completar" style="display: inline;">
+                            <button type="submit" class="btn btn-success btn-sm">Completar</button>
+                        </form>
+                    <% } %>
+                </td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</div>
+
+<%- include('../partials/footer') %>

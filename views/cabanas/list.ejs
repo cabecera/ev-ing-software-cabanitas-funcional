@@ -1,0 +1,34 @@
+<%- include('../partials/header', { title: 'Cabañas' }) %>
+<%- include('../partials/navbar') %>
+
+<div class="page-header">
+    <h1>Cabañas Disponibles</h1>
+    <div>
+        <a href="/calendario/disponibilidad" class="btn btn-secondary">Ver Calendario</a>
+        <% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
+            <a href="/cabanas/crear" class="btn btn-primary">Nueva Cabaña</a>
+        <% } %>
+    </div>
+</div>
+
+<div class="cabanas-grid">
+    <% cabanas.forEach(cabana => { %>
+    <div class="cabana-card">
+        <h3><%= cabana.nombre %></h3>
+        <p><strong>Capacidad:</strong> <%= cabana.capacidad %> personas</p>
+        <p><strong>Precio por noche:</strong> $<%= parseFloat(cabana.precioNoche).toLocaleString() %></p>
+        <p><strong>Estado:</strong>
+            <span class="badge badge-<%= cabana.estado %>"><%= cabana.estado %></span>
+        </p>
+        <p><%= cabana.descripcion %></p>
+        <div class="card-actions">
+            <a href="/cabanas/<%= cabana.id %>" class="btn btn-secondary">Ver Detalles</a>
+            <% if (typeof user !== 'undefined' && user && user.role === 'cliente' && cabana.estado === 'disponible') { %>
+                <a href="/reservas/solicitar?cabanaId=<%= cabana.id %>" class="btn btn-primary">Reservar</a>
+            <% } %>
+        </div>
+    </div>
+    <% }); %>
+</div>
+
+<%- include('../partials/footer') %>

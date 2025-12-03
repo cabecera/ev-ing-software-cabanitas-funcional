@@ -1,0 +1,21 @@
+<%- include('../partials/header', { title: 'Notificaciones' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Mis Notificaciones</h1>
+
+<div class="notifications-list">
+    <% notificaciones.forEach(notif => { %>
+    <div class="notification-item <%= notif.leida ? 'leida' : '' %>">
+        <h3><%= notif.titulo %></h3>
+        <p><%= notif.mensaje %></p>
+        <small><%= new Date(notif.createdAt).toLocaleString() %></small>
+        <% if (!notif.leida) { %>
+            <form method="POST" action="/notificaciones/<%= notif.id %>/leer" style="display: inline;">
+                <button type="submit" class="btn btn-sm">Marcar como leída</button>
+            </form>
+        <% } %>
+    </div>
+    <% }); %>
+</div>
+
+<%- include('../partials/footer') %>

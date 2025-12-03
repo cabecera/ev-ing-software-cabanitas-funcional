@@ -1,0 +1,57 @@
+<%- include('../partials/header', { title: 'Estadísticas de Satisfacción' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Estadísticas de Satisfacción</h1>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>Promedio General</h3>
+        <p class="stat-number"><%= promedios.general.toFixed(2) %>/5</p>
+    </div>
+    <div class="stat-card">
+        <h3>Limpieza</h3>
+        <p class="stat-number"><%= promedios.limpieza.toFixed(2) %>/5</p>
+    </div>
+    <div class="stat-card">
+        <h3>Servicio</h3>
+        <p class="stat-number"><%= promedios.servicio.toFixed(2) %>/5</p>
+    </div>
+    <div class="stat-card">
+        <h3>Precio</h3>
+        <p class="stat-number"><%= promedios.precio.toFixed(2) %>/5</p>
+    </div>
+    <div class="stat-card">
+        <h3>Recomendarían</h3>
+        <p class="stat-number"><%= promedios.recomendarian %>/<%= encuestas.length %></p>
+    </div>
+</div>
+
+<h2>Encuestas Recientes</h2>
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Cliente</th>
+                <th>Cabaña</th>
+                <th>Calificación</th>
+                <th>Recomendaria</th>
+                <th>Comentarios</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% encuestas.forEach(encuesta => { %>
+            <tr>
+                <td><%= encuesta.cliente.nombre %> <%= encuesta.cliente.apellido %></td>
+                <td><%= encuesta.reserva.cabana.nombre %></td>
+                <td><%= encuesta.calificacionGeneral %>/5</td>
+                <td><%= encuesta.recomendaria ? 'Sí' : 'No' %></td>
+                <td><%= encuesta.comentarios || '-' %></td>
+                <td><%= new Date(encuesta.createdAt).toLocaleDateString() %></td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</div>
+
+<%- include('../partials/footer') %>

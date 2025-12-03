@@ -1,0 +1,33 @@
+<%- include('../partials/header', { title: 'Preparaciones' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Preparaciones Pendientes</h1>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Cabaña</th>
+                <th>Cliente</th>
+                <th>Fecha Inicio Reserva</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% preparaciones.forEach(prep => { %>
+            <tr>
+                <td><%= prep.cabana.nombre %></td>
+                <td><%= prep.reserva.cliente.nombre %> <%= prep.reserva.cliente.apellido %></td>
+                <td><%= new Date(prep.reserva.fechaInicio).toLocaleDateString() %></td>
+                <td><span class="badge badge-<%= prep.estado %>"><%= prep.estado %></span></td>
+                <td>
+                    <a href="/encargado/preparacion/<%= prep.id %>" class="btn btn-primary btn-sm">Ver Preparación</a>
+                </td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</div>
+
+<%- include('../partials/footer') %>

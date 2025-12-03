@@ -1,0 +1,134 @@
+<%- include('../partials/header', { title: 'Calendario Maestro' }) %>
+<%- include('../partials/navbar') %>
+
+<div class="page-header">
+    <h1>Calendario Maestro</h1>
+    <div class="calendar-nav">
+        <a href="/calendario/admin?mes=<%= mesActual - 1 %>&anio=<%= anioActual %>" class="btn btn-secondary">Mes Anterior</a>
+        <span class="calendar-month"><%= new Date(anioActual, mesActual - 1).toLocaleString('es-ES', { month: 'long', year: 'numeric' }) %></span>
+        <a href="/calendario/admin?mes=<%= mesActual + 1 %>&anio=<%= anioActual %>" class="btn btn-secondary">Mes Siguiente</a>
+    </div>
+</div>
+
+<div class="calendar-legend">
+    <span class="legend-item reserva">Reserva</span>
+    <span class="legend-item mantenimiento">Mantenimiento</span>
+</div>
+
+<div class="calendar-container">
+    <div class="calendar-grid">
+        <% eventos.forEach(diaInfo => { %>
+            <div class="calendar-day">
+                <div class="day-header"><%= diaInfo.dia %></div>
+                <div class="day-events">
+                    <% diaInfo.eventos.forEach(evento => { %>
+                        <div class="event-item <%= evento.tipo %>">
+                            <strong><%= evento.cabanaNombre %></strong>
+                            <% if (evento.tipo === 'reserva') { %>
+                                <div><%= evento.cliente %></div>
+                                <small>Estado: <%= evento.estado %></small>
+                                <a href="/reservas" class="btn btn-sm">Ver</a>
+                            <% } else { %>
+                                <div><%= evento.tipoMant %></div>
+                                <small>Estado: <%= evento.estado %></small>
+                                <a href="/mantenimientos" class="btn btn-sm">Ver</a>
+                            <% } %>
+                        </div>
+                    <% }); %>
+                    <% if (diaInfo.eventos.length === 0) { %>
+                        <div class="no-events">Sin eventos</div>
+                    <% } %>
+                </div>
+            </div>
+        <% }); %>
+    </div>
+</div>
+
+<style>
+.calendar-nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.calendar-month {
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-transform: capitalize;
+}
+
+.calendar-legend {
+    margin: 1rem 0;
+    display: flex;
+    gap: 1rem;
+}
+
+.legend-item {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+}
+
+.legend-item.reserva {
+    background-color: #4a90e2;
+    color: white;
+}
+
+.legend-item.mantenimiento {
+    background-color: #dc3545;
+    color: white;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.calendar-day {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 0.5rem;
+    min-height: 150px;
+    background: white;
+}
+
+.day-header {
+    font-weight: bold;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 0.5rem;
+}
+
+.day-events {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.event-item {
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+.event-item.reserva {
+    background-color: #e7f3ff;
+    border-left: 3px solid #4a90e2;
+}
+
+.event-item.mantenimiento {
+    background-color: #ffe7e7;
+    border-left: 3px solid #dc3545;
+}
+
+.no-events {
+    color: #6c757d;
+    font-style: italic;
+    font-size: 0.875rem;
+    text-align: center;
+    padding: 0.5rem;
+}
+</style>
+
+<%- include('../partials/footer') %>

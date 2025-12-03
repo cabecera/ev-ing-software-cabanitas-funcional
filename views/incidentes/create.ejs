@@ -1,0 +1,51 @@
+<%- include('../partials/header', { title: 'Reportar Incidente' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Reportar Incidente</h1>
+
+<% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-error"><%= error %></div>
+<% } %>
+
+<form method="POST" action="/incidentes/crear" class="form">
+    <% if (reserva) { %>
+        <input type="hidden" name="reservaId" value="<%= reserva.id %>">
+        <div class="alert alert-info">
+            <strong>Reserva:</strong> <%= reserva.cabana.nombre %> -
+            <%= new Date(reserva.fechaInicio).toLocaleDateString() %>
+        </div>
+    <% } %>
+
+    <div class="form-group">
+        <label for="cabanaId">Cabaña:</label>
+        <select id="cabanaId" name="cabanaId" required>
+            <option value="">Seleccione una cabaña</option>
+            <% cabanas.forEach(cabana => { %>
+                <option value="<%= cabana.id %>" <%= (reserva && reserva.cabanaId === cabana.id) ? 'selected' : '' %>>
+                    <%= cabana.nombre %>
+                </option>
+            <% }); %>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="tipo">Tipo de Incidente:</label>
+        <select id="tipo" name="tipo" required>
+            <option value="">Seleccione un tipo</option>
+            <option value="no_disponible">Cabaña no disponible</option>
+            <option value="daño">Daño en la cabaña</option>
+            <option value="servicio">Problema con el servicio</option>
+            <option value="otro">Otro</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="descripcion">Descripción:</label>
+        <textarea id="descripcion" name="descripcion" rows="4" required placeholder="Describe el incidente en detalle..."></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Reportar Incidente</button>
+    <a href="/incidentes" class="btn btn-secondary">Cancelar</a>
+</form>
+
+<%- include('../partials/footer') %>

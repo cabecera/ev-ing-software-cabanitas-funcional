@@ -1,0 +1,539 @@
+<%- include('../partials/header', { title: 'Solicitar Reserva' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Solicitar Reserva</h1>
+
+<% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-error"><%= error %></div>
+<% } %>
+
+<div class="reserva-container">
+    <form method="POST" action="/reservas/solicitar" class="form reserva-form">
+        <div class="form-group">
+            <label for="cabanaId">Cabaña:</label>
+            <select id="cabanaId" name="cabanaId" required>
+                <option value="">Seleccione una cabaña</option>
+                <% if (typeof cabanas !== 'undefined' && cabanas && cabanas.length > 0) { %>
+                    <% cabanas.forEach(cabana => { %>
+                        <option value="<%= cabana.id %>" <%= (typeof cabanaSeleccionada !== 'undefined' && cabanaSeleccionada && cabanaSeleccionada.id === cabana.id) ? 'selected' : '' %>>
+                            <%= cabana.nombre %> - $<%= parseFloat(cabana.precioNoche).toLocaleString() %>/noche
+                        </option>
+                    <% }); %>
+                <% } else { %>
+                    <option value="" disabled>No hay cabañas disponibles</option>
+                <% } %>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="fechaInicio">Fecha de Inicio:</label>
+            <input type="date" id="fechaInicio" name="fechaInicio" required>
+            <small>Mínimo 4 días de anticipación</small>
+        </div>
+
+        <div class="form-group">
+            <label for="fechaFin">Fecha de Fin:</label>
+            <input type="date" id="fechaFin" name="fechaFin" required>
+            <small>Debe ser posterior a la fecha de inicio</small>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Solicitar Reserva</button>
+        <a href="/reservas/mis-reservas" class="btn btn-secondary">Cancelar</a>
+    </form>
+
+    <!-- Calendario de Disponibilidad -->
+    <div class="calendario-disponibilidad">
+        <h3>Disponibilidad</h3>
+        <div id="calendario-mes" class="calendario-mes">
+            <!-- Se generará con JavaScript -->
+        </div>
+        <div class="calendario-leyenda">
+            <div class="leyenda-item">
+                <span class="leyenda-color disponible"></span>
+                <span>Disponible</span>
+            </div>
+            <div class="leyenda-item">
+                <span class="leyenda-color ocupado"></span>
+                <span>Ocupado</span>
+            </div>
+            <div class="leyenda-item">
+                <span class="leyenda-color no-disponible"></span>
+                <span>No disponible</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Cargar fechas ocupadas desde el servidor
+    <% if (typeof fechasOcupadasPorCabana !== 'undefined' && fechasOcupadasPorCabana) { %>
+        const fechasOcupadasPorCabana = <%- typeof fechasOcupadasPorCabana === 'string' ? fechasOcupadasPorCabana : JSON.stringify(fechasOcupadasPorCabana) %>;
+    <% } else { %>
+        const fechasOcupadasPorCabana = {};
+    <% } %>
+
+    console.log('Fechas ocupadas cargadas:', fechasOcupadasPorCabana);
+
+    // Establecer fecha mínima (4 días desde hoy)
+    const fechaMinima = new Date();
+    fechaMinima.setDate(fechaMinima.getDate() + 4);
+
+    // Formatear fecha para input date (YYYY-MM-DD)
+    const fechaMinimaFormateada = fechaMinima.toISOString().split('T')[0];
+
+    // Aplicar fecha mínima al campo de fecha de inicio
+    const fechaInicioInput = document.getElementById('fechaInicio');
+    const fechaFinInput = document.getElementById('fechaFin');
+    const cabanaSelect = document.getElementById('cabanaId');
+
+    fechaInicioInput.setAttribute('min', fechaMinimaFormateada);
+
+    // Función para obtener estado de una fecha
+    function obtenerEstadoFecha(fecha, cabanaId) {
+        const fechaObj = new Date(fecha);
+        fechaObj.setHours(0, 0, 0, 0);
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        // Primeros 3 días no disponibles
+        const diasDiferencia = Math.floor((fechaObj - hoy) / (1000 * 60 * 60 * 24));
+        if (diasDiferencia < 3) {
+            return 'no-disponible';
+        }
+
+        // Menos de 4 días de anticipación no disponible
+        if (diasDiferencia < 4) {
+            return 'no-disponible';
+        }
+
+        // Verificar si está ocupada
+        if (cabanaId && fechasOcupadasPorCabana[cabanaId]) {
+            const ocupada = fechasOcupadasPorCabana[cabanaId].some(periodo => {
+                const inicio = new Date(periodo.inicio);
+                inicio.setHours(0, 0, 0, 0);
+                const fin = new Date(periodo.fin);
+                fin.setHours(0, 0, 0, 0);
+                return fechaObj >= inicio && fechaObj <= fin;
+            });
+            if (ocupada) {
+                return 'ocupado';
+            }
+        }
+
+        return 'disponible';
+    }
+
+    // Función para generar el calendario
+    function generarCalendario() {
+        const cabanaId = cabanaSelect ? cabanaSelect.value : null;
+        const calendarioMes = document.getElementById('calendario-mes');
+
+        if (!calendarioMes) {
+            console.error('No se encontró el elemento calendario-mes');
+            return;
+        }
+
+        calendarioMes.innerHTML = '';
+
+        // Mostrar calendario siempre, incluso sin cabaña seleccionada
+
+        const hoy = new Date();
+        const mesActual = hoy.getMonth();
+        const anioActual = hoy.getFullYear();
+
+        // Obtener primer día del mes y días en el mes
+        const primerDia = new Date(anioActual, mesActual, 1);
+        const ultimoDia = new Date(anioActual, mesActual + 1, 0);
+        const diasEnMes = ultimoDia.getDate();
+        const diaInicioSemana = primerDia.getDay();
+
+        // Crear encabezado del calendario
+        const header = document.createElement('div');
+        header.className = 'calendario-header';
+        const nombreMes = primerDia.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+        const primeraLetraMayuscula = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+        header.innerHTML = `<h4>${primeraLetraMayuscula}</h4>`;
+
+        // Mensaje informativo si no hay cabaña seleccionada
+        if (!cabanaId) {
+            const infoMsg = document.createElement('p');
+            infoMsg.className = 'text-muted';
+            infoMsg.style.fontSize = '0.875rem';
+            infoMsg.style.marginTop = '0.5rem';
+            infoMsg.textContent = 'Seleccione una cabaña para ver disponibilidad específica';
+            header.appendChild(infoMsg);
+        }
+
+        calendarioMes.appendChild(header);
+
+        // Días de la semana
+        const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        const diasSemanaRow = document.createElement('div');
+        diasSemanaRow.className = 'calendario-dias-semana';
+        diasSemana.forEach(dia => {
+            const diaElement = document.createElement('div');
+            diaElement.className = 'calendario-dia-semana';
+            diaElement.textContent = dia;
+            diasSemanaRow.appendChild(diaElement);
+        });
+        calendarioMes.appendChild(diasSemanaRow);
+
+        // Grid de días
+        const gridDias = document.createElement('div');
+        gridDias.className = 'calendario-grid';
+
+        // Agregar espacios vacíos al inicio
+        for (let i = 0; i < diaInicioSemana; i++) {
+            const espacio = document.createElement('div');
+            espacio.className = 'calendario-dia-vacio';
+            gridDias.appendChild(espacio);
+        }
+
+        // Agregar días del mes
+        for (let dia = 1; dia <= diasEnMes; dia++) {
+            const fecha = new Date(anioActual, mesActual, dia);
+            const fechaStr = fecha.toISOString().split('T')[0];
+            const estado = obtenerEstadoFecha(fechaStr, cabanaId);
+
+            const diaElement = document.createElement('div');
+            diaElement.className = `calendario-dia ${estado}`;
+            diaElement.textContent = dia;
+
+            // Tooltip más descriptivo
+            let tooltip = '';
+            if (estado === 'disponible') {
+                tooltip = 'Disponible - Puede seleccionar esta fecha';
+            } else if (estado === 'ocupado') {
+                tooltip = 'Ocupado - Ya hay una reserva para esta fecha';
+            } else {
+                tooltip = 'No disponible - Mínimo 4 días de anticipación requerido';
+            }
+            diaElement.title = tooltip;
+
+            // Marcar como hoy
+            if (dia === hoy.getDate() && mesActual === hoy.getMonth()) {
+                diaElement.classList.add('hoy');
+            }
+
+            gridDias.appendChild(diaElement);
+        }
+
+        calendarioMes.appendChild(gridDias);
+    }
+
+    // Generar calendario al cargar (esperar a que el DOM esté listo)
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(generarCalendario, 100);
+        });
+    } else {
+        setTimeout(generarCalendario, 100);
+    }
+
+    // Regenerar calendario cuando cambia la cabaña
+    if (cabanaSelect) {
+        cabanaSelect.addEventListener('change', function() {
+            generarCalendario();
+        });
+    }
+
+    // Función para verificar si una fecha está ocupada
+    function fechaEstaOcupada(fecha, cabanaId) {
+        if (!cabanaId || !fechasOcupadasPorCabana[cabanaId]) {
+            return false;
+        }
+
+        const fechaObj = new Date(fecha);
+        fechaObj.setHours(0, 0, 0, 0);
+
+        return fechasOcupadasPorCabana[cabanaId].some(periodo => {
+            const inicio = new Date(periodo.inicio);
+            inicio.setHours(0, 0, 0, 0);
+            const fin = new Date(periodo.fin);
+            fin.setHours(0, 0, 0, 0);
+            return fechaObj >= inicio && fechaObj <= fin;
+        });
+    }
+
+    // Función para obtener todas las fechas ocupadas en un rango
+    function obtenerFechasOcupadasEnRango(fechaInicio, fechaFin, cabanaId) {
+        if (!cabanaId || !fechasOcupadasPorCabana[cabanaId]) {
+            return [];
+        }
+
+        const inicioObj = new Date(fechaInicio);
+        inicioObj.setHours(0, 0, 0, 0);
+        const finObj = new Date(fechaFin);
+        finObj.setHours(0, 0, 0, 0);
+
+        const fechasOcupadas = [];
+        const periodos = fechasOcupadasPorCabana[cabanaId];
+
+        periodos.forEach(periodo => {
+            const periodoInicio = new Date(periodo.inicio);
+            periodoInicio.setHours(0, 0, 0, 0);
+            const periodoFin = new Date(periodo.fin);
+            periodoFin.setHours(0, 0, 0, 0);
+
+            // Si hay solapamiento
+            if (!(periodoFin < inicioObj || periodoInicio > finObj)) {
+                // Calcular el rango de solapamiento
+                const solapamientoInicio = periodoInicio > inicioObj ? periodoInicio : inicioObj;
+                const solapamientoFin = periodoFin < finObj ? periodoFin : finObj;
+
+                // Agregar todas las fechas del rango solapado
+                const fechaActual = new Date(solapamientoInicio);
+                while (fechaActual <= solapamientoFin) {
+                    fechasOcupadas.push(fechaActual.toISOString().split('T')[0]);
+                    fechaActual.setDate(fechaActual.getDate() + 1);
+                }
+            }
+        });
+
+        return fechasOcupadas;
+    }
+
+    // Validar fecha de inicio cuando cambia
+    fechaInicioInput.addEventListener('change', function() {
+        const fechaInicio = this.value;
+        const cabanaId = cabanaSelect.value;
+
+        if (fechaInicio && cabanaId) {
+            // Verificar si la fecha está ocupada
+            if (fechaEstaOcupada(fechaInicio, cabanaId)) {
+                alert('Esta fecha no está disponible. Por favor, seleccione otra fecha.');
+                this.value = '';
+                return;
+            }
+
+            // Validar que fecha fin sea posterior a fecha inicio
+            const fechaFinMinima = new Date(fechaInicio);
+            fechaFinMinima.setDate(fechaFinMinima.getDate() + 1);
+            const fechaFinMinimaFormateada = fechaFinMinima.toISOString().split('T')[0];
+            fechaFinInput.setAttribute('min', fechaFinMinimaFormateada);
+
+            // Si la fecha fin actual es anterior a la nueva fecha inicio, resetearla
+            if (fechaFinInput.value && fechaFinInput.value <= fechaInicio) {
+                fechaFinInput.value = '';
+            }
+
+            // Si ya hay una fecha fin seleccionada, validar el rango completo
+            if (fechaFinInput.value) {
+                const fechasOcupadas = obtenerFechasOcupadasEnRango(fechaInicio, fechaFinInput.value, cabanaId);
+                if (fechasOcupadas.length > 0) {
+                    alert('El rango de fechas seleccionado contiene días ocupados. Por favor, seleccione otro rango.');
+                    fechaFinInput.value = '';
+                }
+            }
+        }
+    });
+
+    // Validar fecha de fin cuando cambia
+    fechaFinInput.addEventListener('change', function() {
+        const fechaFin = this.value;
+        const fechaInicio = fechaInicioInput.value;
+        const cabanaId = cabanaSelect.value;
+
+        if (fechaFin && fechaInicio && cabanaId) {
+            // Verificar si el rango completo está disponible
+            const fechasOcupadas = obtenerFechasOcupadasEnRango(fechaInicio, fechaFin, cabanaId);
+            if (fechasOcupadas.length > 0) {
+                alert('El rango de fechas seleccionado contiene días ocupados. Por favor, seleccione otro rango.');
+                this.value = '';
+            }
+        }
+    });
+
+    // Validar cuando cambia la cabaña seleccionada
+    cabanaSelect.addEventListener('change', function() {
+        const cabanaId = this.value;
+
+        // Resetear fechas si hay una seleccionada
+        if (fechaInicioInput.value && cabanaId) {
+            if (fechaEstaOcupada(fechaInicioInput.value, cabanaId)) {
+                alert('La fecha de inicio seleccionada no está disponible para esta cabaña. Por favor, seleccione otra fecha.');
+                fechaInicioInput.value = '';
+                fechaFinInput.value = '';
+            }
+        }
+
+        if (fechaFinInput.value && fechaInicioInput.value && cabanaId) {
+            const fechasOcupadas = obtenerFechasOcupadasEnRango(fechaInicioInput.value, fechaFinInput.value, cabanaId);
+            if (fechasOcupadas.length > 0) {
+                alert('El rango de fechas seleccionado contiene días ocupados para esta cabaña. Por favor, seleccione otro rango.');
+                fechaInicioInput.value = '';
+                fechaFinInput.value = '';
+            }
+        }
+    });
+
+    // Validación adicional antes de enviar el formulario
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const cabanaId = cabanaSelect.value;
+        const fechaInicio = fechaInicioInput.value;
+        const fechaFin = fechaFinInput.value;
+
+        if (!cabanaId || !fechaInicio || !fechaFin) {
+            return; // Dejar que la validación HTML5 maneje esto
+        }
+
+        // Verificar si alguna fecha está ocupada
+        if (fechaEstaOcupada(fechaInicio, cabanaId) || fechaEstaOcupada(fechaFin, cabanaId)) {
+            e.preventDefault();
+            alert('Una de las fechas seleccionadas no está disponible. Por favor, seleccione otras fechas.');
+            return false;
+        }
+
+        // Verificar el rango completo
+        const fechasOcupadas = obtenerFechasOcupadasEnRango(fechaInicio, fechaFin, cabanaId);
+        if (fechasOcupadas.length > 0) {
+            e.preventDefault();
+            alert('El rango de fechas seleccionado contiene días ocupados. Por favor, seleccione otro rango.');
+            return false;
+        }
+    });
+</script>
+
+<style>
+.reserva-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.reserva-form {
+    max-width: 100%;
+}
+
+.calendario-disponibilidad {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.calendario-disponibilidad h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: var(--dark-color);
+}
+
+.calendario-mes {
+    margin-bottom: 1rem;
+}
+
+.calendario-header {
+    text-align: center;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    text-transform: capitalize;
+}
+
+.calendario-dias-semana {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.calendario-dia-semana {
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.875rem;
+    color: var(--dark-color);
+    padding: 0.5rem;
+}
+
+.calendario-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.25rem;
+}
+
+.calendario-dia {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: default;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+}
+
+.calendario-dia-vacio {
+    aspect-ratio: 1;
+}
+
+.calendario-dia.disponible {
+    background-color: #d4edda;
+    color: #155724;
+    border-color: #c3e6cb;
+}
+
+.calendario-dia.ocupado {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+    text-decoration: line-through;
+    cursor: not-allowed;
+}
+
+.calendario-dia.no-disponible {
+    background-color: #e2e3e5;
+    color: #6c757d;
+    border-color: #d6d8db;
+    cursor: not-allowed;
+}
+
+.calendario-dia.hoy {
+    border: 2px solid var(--primary-color);
+    font-weight: bold;
+}
+
+.calendario-leyenda {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.leyenda-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.leyenda-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.leyenda-color.disponible {
+    background-color: #d4edda;
+}
+
+.leyenda-color.ocupado {
+    background-color: #f8d7da;
+}
+
+.leyenda-color.no-disponible {
+    background-color: #e2e3e5;
+}
+
+@media (max-width: 768px) {
+    .reserva-container {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<%- include('../partials/footer') %>

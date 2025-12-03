@@ -1,0 +1,40 @@
+<%- include('../partials/header', { title: 'Mis Tareas' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Mis Tareas</h1>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Descripción</th>
+                <th>Cabaña</th>
+                <th>Fecha Asignada</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% tareas.forEach(tarea => { %>
+            <tr>
+                <td><%= tarea.tipo %></td>
+                <td><%= tarea.descripcion %></td>
+                <td><%= tarea.cabana ? tarea.cabana.nombre : '-' %></td>
+                <td><%= new Date(tarea.fechaAsignacion).toLocaleDateString() %></td>
+                <td><span class="badge badge-<%= tarea.estado %>"><%= tarea.estado %></span></td>
+                <td>
+                    <a href="/trabajador/tarea/<%= tarea.id %>" class="btn btn-primary btn-sm">Ver</a>
+                    <% if (tarea.estado === 'pendiente') { %>
+                        <form method="POST" action="/trabajador/tarea/<%= tarea.id %>/iniciar" style="display: inline;">
+                            <button type="submit" class="btn btn-success btn-sm">Iniciar</button>
+                        </form>
+                    <% } %>
+                </td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</div>
+
+<%- include('../partials/footer') %>

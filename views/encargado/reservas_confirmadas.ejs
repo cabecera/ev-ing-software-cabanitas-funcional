@@ -1,0 +1,46 @@
+<%- include('../partials/header', { title: 'Reservas Confirmadas' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Reservas Confirmadas para Preparar</h1>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Cabaña</th>
+                <th>Cliente</th>
+                <th>Fecha Inicio</th>
+                <th>Fecha Fin</th>
+                <th>Estado Preparación</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% reservas.forEach(reserva => { %>
+            <tr>
+                <td><%= reserva.cabana.nombre %></td>
+                <td><%= reserva.cliente.nombre %> <%= reserva.cliente.apellido %></td>
+                <td><%= new Date(reserva.fechaInicio).toLocaleDateString() %></td>
+                <td><%= new Date(reserva.fechaFin).toLocaleDateString() %></td>
+                <td>
+                    <% if (reserva.preparacion) { %>
+                        <span class="badge badge-<%= reserva.preparacion.estado %>"><%= reserva.preparacion.estado %></span>
+                        <a href="/encargado/preparacion/<%= reserva.preparacion.id %>" class="btn btn-sm">Ver</a>
+                    <% } else { %>
+                        <span class="badge badge-pendiente">Sin iniciar</span>
+                    <% } %>
+                </td>
+                <td>
+                    <% if (!reserva.preparacion) { %>
+                        <form method="POST" action="/encargado/preparacion/<%= reserva.id %>/iniciar" style="display: inline;">
+                            <button type="submit" class="btn btn-primary btn-sm">Iniciar Preparación</button>
+                        </form>
+                    <% } %>
+                </td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</div>
+
+<%- include('../partials/footer') %>

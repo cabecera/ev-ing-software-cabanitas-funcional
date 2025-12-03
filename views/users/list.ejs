@@ -1,0 +1,64 @@
+<%- include('../partials/header', { title: 'Usuarios' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Gestión de Usuarios</h1>
+<a href="/users/crear" class="btn btn-primary">Nuevo Usuario</a>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Nombre</th>
+                <th>Estado</th>
+                <th>Fecha Creación</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (typeof users !== 'undefined' && users && users.length > 0) { %>
+                <% users.forEach(user => { %>
+            <tr>
+                <td><%= user.email %></td>
+                <td><span class="badge badge-<%= user.role %>"><%= user.role %></span></td>
+                <td>
+                    <% if (user.cliente) { %>
+                        <%= user.cliente.nombre %> <%= user.cliente.apellido %>
+                    <% } else { %>
+                        -
+                    <% } %>
+                </td>
+                <td>
+                    <% if (user.activo) { %>
+                        <span class="badge badge-success">Activo</span>
+                    <% } else { %>
+                        <span class="badge badge-danger">Inactivo</span>
+                    <% } %>
+                </td>
+                <td><%= new Date(user.createdAt).toLocaleDateString() %></td>
+                <td>
+                    <% if (typeof req !== 'undefined' && req.session && req.session.user && user.id !== req.session.user.id) { %>
+                        <form method="POST" action="/users/<%= user.id %>/toggle-activo" style="display: inline;">
+                            <button type="submit" class="btn btn-sm <%= user.activo ? 'btn-danger' : 'btn-success' %>">
+                                <%= user.activo ? 'Desactivar' : 'Activar' %>
+                            </button>
+                        </form>
+                    <% } else { %>
+                        <span class="text-muted">Tu cuenta</span>
+                    <% } %>
+                </td>
+            </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 2rem;">
+                        No hay usuarios registrados.
+                    </td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+</div>
+
+<%- include('../partials/footer') %>

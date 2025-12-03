@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= typeof status !== 'undefined' && status === 404 ? '404 - No Encontrado' : 'Error' %> - Sistema de Cabañas</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <% if (typeof isAuthenticated !== 'undefined' && isAuthenticated) { %>
+        <%- include('partials/navbar') %>
+    <% } %>
+
+    <div class="container">
+        <div class="error-page">
+            <% if (typeof status !== 'undefined' && status === 404) { %>
+                <h1>404 - Página No Encontrada</h1>
+                <div class="alert alert-warning" style="margin-top: 1rem;">
+                    <strong>Lo sentimos:</strong> La página o recurso que está buscando no existe.
+                </div>
+            <% } else if (typeof isDatabaseError !== 'undefined' && isDatabaseError) { %>
+                <h1>Error de Conexión</h1>
+                <div class="alert alert-error" style="margin-top: 1rem;">
+                    <strong>Error de base de datos:</strong><br>
+                    No se pudo conectar con la base de datos o una tabla requerida no existe.
+                    <br><br>
+                    <small>Por favor, verifique que la base de datos esté funcionando correctamente o contacte al administrador del sistema.</small>
+                </div>
+            <% } else { %>
+                <h1>Error <%= typeof status !== 'undefined' ? status : '500' %></h1>
+                <p class="error-message"><%= typeof message !== 'undefined' ? message : 'Ha ocurrido un error inesperado' %></p>
+            <% } %>
+
+            <% if (typeof error !== 'undefined' && error && error.message && process.env.NODE_ENV === 'development') { %>
+                <div class="alert alert-error" style="margin-top: 1rem;">
+                    <strong>Detalle del error (solo en desarrollo):</strong><br>
+                    <%= error.message %>
+                    <% if (typeof error.stack !== 'undefined' && error.stack) { %>
+                        <pre style="margin-top: 1rem; font-size: 0.875rem; background: #f8f8f8; padding: 1rem; border-radius: 4px; overflow-x: auto; max-height: 400px; overflow-y: auto;"><%= error.stack %></pre>
+                    <% } %>
+                </div>
+            <% } %>
+
+            <div style="margin-top: 2rem;">
+                <a href="/" class="btn btn-primary">Volver al inicio</a>
+                <% if (typeof req !== 'undefined' && req.session && req.session.user) { %>
+                    <% if (req.session.user.role === 'admin') { %>
+                        <a href="/dashboard/admin" class="btn btn-secondary">Ir al Dashboard Admin</a>
+                    <% } else if (req.session.user.role === 'encargado') { %>
+                        <a href="/dashboard/encargado" class="btn btn-secondary">Ir al Dashboard Encargado</a>
+                    <% } else if (req.session.user.role === 'trabajador') { %>
+                        <a href="/dashboard/trabajador" class="btn btn-secondary">Ir al Dashboard Trabajador</a>
+                    <% } else { %>
+                        <a href="/dashboard/cliente" class="btn btn-secondary">Ir al Dashboard</a>
+                    <% } %>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <%- include('partials/footer') %>
+</body>
+</html>

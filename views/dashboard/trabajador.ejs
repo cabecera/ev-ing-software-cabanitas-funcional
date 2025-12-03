@@ -1,0 +1,27 @@
+<%- include('../partials/header', { title: 'Dashboard Trabajador' }) %>
+<%- include('../partials/navbar') %>
+
+<div class="dashboard">
+    <h1>Dashboard Trabajador</h1>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Tareas Pendientes</h3>
+            <p class="stat-number"><%= stats.tareasPendientes || 0 %></p>
+        </div>
+        <div class="stat-card">
+            <h3>Tareas en Proceso</h3>
+            <p class="stat-number"><%= stats.tareasEnProceso || 0 %></p>
+        </div>
+        <div class="stat-card">
+            <h3>Tareas Completadas (Hoy)</h3>
+            <p class="stat-number"><%= stats.tareasCompletadasHoy || 0 %></p>
+        </div>
+    </div>
+
+    <div class="actions-section">
+        <a href="/trabajador/tareas" class="btn btn-primary">Ver Mis Tareas</a>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

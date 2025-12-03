@@ -1,0 +1,60 @@
+<%- include('../partials/header', { title: 'Mis Reservas' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Mis Reservas</h1>
+<a href="/reservas/solicitar" class="btn btn-primary">Nueva Reserva</a>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Cabaña</th>
+                <th>Fecha Inicio</th>
+                <th>Fecha Fin</th>
+                <th>Monto</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% reservas.forEach(reserva => { %>
+            <tr>
+                <td><%= reserva.cabana.nombre %></td>
+                <td><%= new Date(reserva.fechaInicio).toLocaleDateString() %></td>
+                <td><%= new Date(reserva.fechaFin).toLocaleDateString() %></td>
+                <td>$<%= parseFloat(reserva.montoCotizado).toLocaleString() %></td>
+                <td><span class="badge badge-<%= reserva.estado %>"><%= reserva.estado %></span></td>
+                <td>
+                    <% if (reserva.estado === 'confirmada' || reserva.estado === 'pendiente') { %>
+                        <% if (!reserva.pago || parseFloat(reserva.pago.monto || 0) < parseFloat(reserva.montoCotizado)) { %>
+                            <a href="/pagos/reserva/<%= reserva.id %>" class="btn btn-success btn-sm">Pagar</a>
+                        <% } %>
+                    <% } %>
+                    <%
+                        const fechaInicio = new Date(reserva.fechaInicio);
+                        const hoy = new Date();
+                        hoy.setHours(0, 0, 0, 0);
+                        const puedeCheckin = reserva.estado === 'confirmada' && reserva.pago && reserva.pago.estado === 'completado' && fechaInicio <= hoy;
+                    %>
+                    <% if (puedeCheckin) { %>
+                        <a href="/checkin/<%= reserva.id %>" class="btn btn-primary btn-sm">Check-in</a>
+                    <% } %>
+                    <% if (reserva.estado === 'pendiente' || reserva.estado === 'confirmada') { %>
+                        <form method="POST" action="/reservas/<%= reserva.id %>/cancelar" style="display: inline;">
+                            <button type="submit" class="btn btn-danger btn-sm">Cancelar</button>
+                        </form>
+                    <% } %>
+                    <% if (reserva.estado === 'completada' && !reserva.encuestaCompletada) { %>
+                        <a href="/encuestas/<%= reserva.id %>" class="btn btn-info btn-sm">Completar Encuesta</a>
+                    <% } %>
+                    <% if (reserva.estado !== 'cancelada') { %>
+                        <a href="/incidentes/crear?reservaId=<%= reserva.id %>" class="btn btn-warning btn-sm">Reportar Incidente</a>
+                    <% } %>
+                </td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</div>
+
+<%- include('../partials/footer') %>
