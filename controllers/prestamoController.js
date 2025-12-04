@@ -137,7 +137,9 @@ const prestamoController = {
 
         // Crear pago si hay monto
         if (montoTotal > 0) {
+          // Crear pago para préstamo (reservaId es NULL)
           await Pago.create({
+            reservaId: null,
             prestamoImplementoId: prestamo.id,
             monto: montoTotal,
             metodoPago: metodoPago || 'transferencia',
@@ -160,7 +162,23 @@ const prestamoController = {
             );
           }
         } catch (notifError) {
-          console.error('Error al crear notificaciones:', notifError);
+          console.error('Error al crear notificaciones a administradores:', notifError);
+          // No fallar el proceso si las notificaciones fallan
+        }
+
+        // Notificar a encargados
+        try {
+          const encargados = await User.findAll({ where: { role: 'encargado', activo: true } });
+          for (const encargado of encargados) {
+            await crearNotificacion(
+              encargado.id,
+              'Nuevo Préstamo de Implemento',
+              `El cliente ${cliente ? cliente.nombre + ' ' + cliente.apellido : 'N/A'} ha solicitado un préstamo de ${cantidadSolicitada} unidad(es) de "${implemento.nombre}".${montoTotal > 0 ? ` Monto pagado: $${montoTotal.toLocaleString()}` : ' (Gratis)'}`,
+              'info'
+            );
+          }
+        } catch (notifError) {
+          console.error('Error al crear notificaciones a encargados:', notifError);
           // No fallar el proceso si las notificaciones fallan
         }
 

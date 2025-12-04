@@ -67,3 +67,4 @@ module.exports = {
     await queryInterface.dropTable('entrega_cabanas');
   }
 };
+

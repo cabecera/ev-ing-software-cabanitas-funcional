@@ -6,7 +6,16 @@ const authController = {
   // Mostrar formulario de login
   showLogin: (req, res) => {
     if (req.session.user) {
-      return res.redirect('/dashboard');
+      const role = req.session.user.role;
+      if (role === 'admin') {
+        return res.redirect('/dashboard/admin');
+      } else if (role === 'encargado') {
+        return res.redirect('/dashboard/encargado');
+      } else if (role === 'trabajador') {
+        return res.redirect('/dashboard/trabajador');
+      } else {
+        return res.redirect('/dashboard/cliente');
+      }
     }
     res.render('auth/login', { error: null });
   },
@@ -64,7 +73,16 @@ const authController = {
   // Mostrar formulario de registro
   showRegister: (req, res) => {
     if (req.session.user) {
-      return res.redirect('/dashboard');
+      const role = req.session.user.role;
+      if (role === 'admin') {
+        return res.redirect('/dashboard/admin');
+      } else if (role === 'encargado') {
+        return res.redirect('/dashboard/encargado');
+      } else if (role === 'trabajador') {
+        return res.redirect('/dashboard/trabajador');
+      } else {
+        return res.redirect('/dashboard/cliente');
+      }
     }
     res.render('auth/registro', { error: null });
   },

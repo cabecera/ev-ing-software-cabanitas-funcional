@@ -393,7 +393,7 @@ const reservaController = {
         await crearNotificacion(
           reserva.cliente.user.id,
           'Reserva Confirmada',
-          `Tu reserva para la cabaña "${reserva.cabana.nombre}" del ${new Date(reserva.fechaInicio).toLocaleDateString()} al ${new Date(reserva.fechaFin).toLocaleDateString()} ha sido confirmada. Por favor realiza el pago para completar tu reserva.`,
+          `Tu reserva para la cabaña "${reserva.cabana.nombre}" del ${new Date(reserva.fechaInicio).toLocaleDateString()} al ${new Date(reserva.fechaFin).toLocaleDateString()} ha sido confirmada.`,
           'success'
         );
       }

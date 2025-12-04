@@ -56,3 +56,4 @@ module.exports = {
     await queryInterface.dropTable('item_preparacion_completados');
   }
 };
+

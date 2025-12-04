@@ -12,3 +12,4 @@ router.post('/:id/editar', requireAuth, requireAdmin, cabanaController.update);
 router.post('/:id/eliminar', requireAuth, requireAdmin, cabanaController.delete);
 
 module.exports = router;
+

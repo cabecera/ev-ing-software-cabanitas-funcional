@@ -88,3 +88,4 @@ module.exports = {
     await queryInterface.dropTable('incidentes');
   }
 };
+

@@ -87,3 +87,4 @@ const reporteFaltantesController = {
 };
 
 module.exports = reporteFaltantesController;
+

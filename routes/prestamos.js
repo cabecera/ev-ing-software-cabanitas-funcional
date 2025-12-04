@@ -10,3 +10,4 @@ router.get('/', requireAuth, requireAdmin, prestamoController.listAll);
 router.post('/:id/devolver', requireAuth, prestamoController.devolver);
 
 module.exports = router;
+

@@ -1,5 +1,5 @@
 const db = require('../models');
-const { Reserva, Cabana, Cliente, Pago, EncuestaSatisfaccion } = db;
+const { Reserva, Cabana, Cliente, Pago, EncuestaSatisfaccion, PrestamoImplemento, Implemento } = db;
 const { Op } = require('sequelize');
 
 const reportesController = {
@@ -44,20 +44,19 @@ const reportesController = {
       }).catch(() => 0);
 
       // Ingresos - calcular basándose en todos los pagos completados del período
-      // Pagos de reservas (pagos completados en el período, filtrar por reservas del período)
+      // Pagos de reservas (pagos completados, filtrar por fechaPago o createdAt si fechaPago es null)
       const pagosReservas = await Pago.findAll({
         where: {
           estado: 'completado',
-          reservaId: { [Op.ne]: null }
-        },
-        include: [{
-          model: Reserva,
-          as: 'reserva',
-          required: true,
-          where: {
-            fechaInicio: { [Op.between]: [fechaInicioStr, fechaFinStr] }
-          }
-        }]
+          reservaId: { [Op.ne]: null },
+          [Op.or]: [
+            { fechaPago: { [Op.between]: [fechaInicio, fechaFin] } },
+            {
+              fechaPago: null,
+              createdAt: { [Op.between]: [fechaInicio, fechaFin] }
+            }
+          ]
+        }
       }).catch(() => []);
 
       // Sumar montos de pagos de reservas
@@ -68,8 +67,14 @@ const reportesController = {
       const pagosPrestamos = await Pago.findAll({
         where: {
           estado: 'completado',
-          fechaPago: { [Op.between]: [fechaInicio, fechaFin] },
-          prestamoImplementoId: { [Op.ne]: null }
+          prestamoImplementoId: { [Op.ne]: null },
+          [Op.or]: [
+            { fechaPago: { [Op.between]: [fechaInicio, fechaFin] } },
+            {
+              fechaPago: null,
+              createdAt: { [Op.between]: [fechaInicio, fechaFin] }
+            }
+          ]
         }
       }).catch(() => []);
 
@@ -132,6 +137,77 @@ const reportesController = {
         ? encuestas.reduce((sum, e) => sum + (parseFloat(e.calificacionGeneral) || 0), 0) / encuestas.length
         : 0;
 
+      // Historial de ingresos - todos los pagos completados en el período
+      const historialPagos = await Pago.findAll({
+        where: {
+          estado: 'completado',
+          [Op.or]: [
+            { fechaPago: { [Op.between]: [fechaInicio, fechaFin] } },
+            {
+              fechaPago: null,
+              createdAt: { [Op.between]: [fechaInicio, fechaFin] }
+            }
+          ]
+        },
+        include: [
+          {
+            model: Reserva,
+            as: 'reserva',
+            required: false,
+            include: [
+              { model: Cabana, as: 'cabana', required: false },
+              { model: Cliente, as: 'cliente', required: false }
+            ]
+          },
+          {
+            model: PrestamoImplemento,
+            as: 'prestamoImplemento',
+            required: false,
+            include: [
+              { model: Implemento, as: 'implemento', required: false },
+              { model: Cliente, as: 'cliente', required: false }
+            ]
+          }
+        ],
+        order: [
+          ['fechaPago', 'DESC'],
+          ['createdAt', 'DESC']
+        ],
+        limit: 100
+      }).catch(() => []);
+
+      // Formatear historial con información legible
+      const historialFormateado = historialPagos.map(pago => {
+        const fecha = pago.fechaPago || pago.createdAt;
+        let descripcion = '';
+        let tipo = '';
+        let cliente = '';
+
+        if (pago.reserva) {
+          tipo = 'Reserva de Cabaña';
+          descripcion = `Cabaña: ${pago.reserva.cabana ? pago.reserva.cabana.nombre : 'N/A'}`;
+          if (pago.reserva.cliente) {
+            cliente = `${pago.reserva.cliente.nombre} ${pago.reserva.cliente.apellido}`;
+          }
+        } else if (pago.prestamoImplemento) {
+          tipo = 'Préstamo de Implemento';
+          descripcion = `Implemento: ${pago.prestamoImplemento.implemento ? pago.prestamoImplemento.implemento.nombre : 'N/A'}`;
+          if (pago.prestamoImplemento.cliente) {
+            cliente = `${pago.prestamoImplemento.cliente.nombre} ${pago.prestamoImplemento.cliente.apellido}`;
+          }
+        }
+
+        return {
+          id: pago.id,
+          tipo,
+          descripcion,
+          cliente,
+          monto: parseFloat(pago.monto || 0),
+          metodoPago: pago.metodoPago,
+          fecha: fecha
+        };
+      });
+
       res.render('reportes/dashboard', {
         totalReservas: totalReservas || 0,
         reservasConfirmadas: reservasConfirmadas || 0,
@@ -139,6 +215,7 @@ const reportesController = {
         ocupacionPorCabana: ocupacionPorCabana || {},
         clientesFrecuentes: clientesFrecuentes || [],
         promedioSatisfaccion: promedioSatisfaccion || 0,
+        historialIngresos: historialFormateado || [],
         fechaInicio: fechaInicio.toISOString().split('T')[0],
         fechaFin: req.query.fechaFin ? new Date(req.query.fechaFin).toISOString().split('T')[0] : fechaFin.toISOString().split('T')[0],
         req: req

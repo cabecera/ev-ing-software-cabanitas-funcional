@@ -65,3 +65,4 @@ module.exports = {
     await queryInterface.dropTable('reservas');
   }
 };
+

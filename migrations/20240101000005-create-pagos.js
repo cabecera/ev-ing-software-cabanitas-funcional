@@ -51,3 +51,4 @@ module.exports = {
     await queryInterface.dropTable('pagos');
   }
 };
+

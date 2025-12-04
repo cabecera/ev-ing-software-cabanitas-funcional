@@ -8,6 +8,7 @@ module.exports = (sequelize, DataTypes) => {
     reservaId: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      defaultValue: null,
       references: {
         model: 'reservas',
         key: 'id'

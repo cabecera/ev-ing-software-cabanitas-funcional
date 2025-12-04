@@ -61,3 +61,4 @@ module.exports = {
     await queryInterface.dropTable('preparacion_cabanas');
   }
 };
+

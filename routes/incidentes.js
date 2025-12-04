@@ -11,3 +11,4 @@ router.post('/:id/responder', requireAuth, requireRole('cliente'), incidenteCont
 router.post('/:id/resolver', requireAuth, requireAdmin, incidenteController.resolver);
 
 module.exports = router;
+

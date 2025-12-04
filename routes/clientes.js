@@ -48,3 +48,4 @@ router.post('/perfil', requireAuth, requireRole('cliente'), async (req, res) => 
 });
 
 module.exports = router;
+

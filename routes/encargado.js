@@ -8,7 +8,5 @@ router.get('/reservas-confirmadas', requireAuth, requireAdminOrEncargado, encarg
 router.post('/preparacion/:reservaId/iniciar', requireAuth, requireAdminOrEncargado, encargadoController.iniciarPreparacion);
 router.get('/preparacion/:id', requireAuth, requireAdminOrEncargado, encargadoController.verPreparacion);
 router.post('/preparacion/:id/tarea/:tareaId/completar', requireAuth, requireAdminOrEncargado, encargadoController.completarTarea);
-router.get('/trabajadores', requireAuth, requireAdminOrEncargado, encargadoController.listTrabajadores);
-router.post('/asignar-tarea', requireAuth, requireAdminOrEncargado, encargadoController.asignarTarea);
 
 module.exports = router;

@@ -9,3 +9,4 @@ router.post('/crear', requireAuth, requireAdmin, userController.create);
 router.post('/:id/toggle-activo', requireAuth, requireAdmin, userController.toggleActivo);
 
 module.exports = router;
+

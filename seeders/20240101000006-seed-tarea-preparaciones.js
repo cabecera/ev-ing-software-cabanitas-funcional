@@ -38,3 +38,4 @@ module.exports = {
     await queryInterface.bulkDelete('tarea_preparaciones', null, {});
   }
 };
+

@@ -8,3 +8,4 @@ router.post('/crear', requireAuth, requireAdmin, implementoController.create);
 router.post('/:id/editar', requireAuth, requireAdmin, implementoController.update);
 
 module.exports = router;
+

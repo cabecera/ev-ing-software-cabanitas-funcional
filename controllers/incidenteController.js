@@ -167,3 +167,4 @@ const incidenteController = {
 };
 
 module.exports = incidenteController;
+

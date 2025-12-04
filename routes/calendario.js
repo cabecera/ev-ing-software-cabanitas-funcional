@@ -10,3 +10,4 @@ router.get('/disponibilidad', calendarioController.disponibilidad);
 router.get('/admin', requireAuth, requireAdmin, calendarioController.adminCalendario);
 
 module.exports = router;
+

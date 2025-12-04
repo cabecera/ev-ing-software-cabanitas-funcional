@@ -435,10 +435,6 @@ tbody tr:hover {
     border-bottom: none;
 }
 
-.notification-item.leida {
-    opacity: 0.6;
-}
-
 /* Page Header */
 .page-header {
     display: flex;

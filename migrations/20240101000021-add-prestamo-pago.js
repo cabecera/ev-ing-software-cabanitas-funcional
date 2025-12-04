@@ -14,6 +14,7 @@ module.exports = {
     await queryInterface.changeColumn('pagos', 'reservaId', {
       type: Sequelize.INTEGER,
       allowNull: true,
+      defaultValue: null,
       references: {
         model: 'reservas',
         key: 'id'

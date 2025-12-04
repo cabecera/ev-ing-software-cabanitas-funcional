@@ -7,3 +7,4 @@ router.get('/:reservaId', requireAuth, requireRole('cliente'), checkinController
 router.post('/:reservaId', requireAuth, requireRole('cliente'), checkinController.procesarCheckin);
 
 module.exports = router;
+

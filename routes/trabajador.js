@@ -10,3 +10,4 @@ router.post('/tarea/:id/completar', requireAuth, requireRole('trabajador'), trab
 router.post('/tarea/:id/reportar-dano', requireAuth, requireRole('trabajador'), trabajadorController.reportarDano);
 
 module.exports = router;
+

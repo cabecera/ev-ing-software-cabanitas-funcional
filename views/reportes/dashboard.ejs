@@ -82,4 +82,36 @@
 </div>
 <% } %>
 
+<h2>Historial de Ingresos</h2>
+<% if (typeof historialIngresos !== 'undefined' && historialIngresos.length > 0) { %>
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Descripción</th>
+                <th>Cliente</th>
+                <th>Monto</th>
+                <th>Método de Pago</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% historialIngresos.forEach(pago => { %>
+            <tr>
+                <td><%= new Date(pago.fecha).toLocaleDateString() %></td>
+                <td><%= pago.tipo || 'N/A' %></td>
+                <td><%= pago.descripcion || 'N/A' %></td>
+                <td><%= pago.cliente || 'N/A' %></td>
+                <td>$<%= pago.monto.toLocaleString() %></td>
+                <td><%= pago.metodoPago || 'N/A' %></td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</div>
+<% } else { %>
+<p>No hay ingresos registrados en el período seleccionado.</p>
+<% } %>
+
 <%- include('../partials/footer') %>

@@ -72,3 +72,4 @@ module.exports = {
     await queryInterface.dropTable('encuesta_satisfaccions');
   }
 };
+

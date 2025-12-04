@@ -36,3 +36,4 @@ module.exports = {
     await queryInterface.dropTable('tarea_preparaciones');
   }
 };
+
