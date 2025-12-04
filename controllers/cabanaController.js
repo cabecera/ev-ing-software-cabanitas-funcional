@@ -12,13 +12,26 @@ const cabanaController = {
       res.render('cabanas/list', { cabanas, user: req.session.user });
     } catch (error) {
       console.error('Error al listar cabañas:', error);
-      res.status(500).render('error', { message: 'Error al cargar cabañas', error });
+      res.status(500).render('error', {
+        message: 'Error al cargar cabañas',
+        error: process.env.NODE_ENV === 'development' ? error : {},
+        req: req
+      });
     }
   },
 
   // Mostrar formulario de creación (admin)
   showCreate: (req, res) => {
-    res.render('cabanas/create');
+    try {
+      res.render('cabanas/create');
+    } catch (error) {
+      console.error('Error al mostrar formulario de creación:', error);
+      res.status(500).render('error', {
+        message: 'Error al cargar formulario',
+        error: process.env.NODE_ENV === 'development' ? error : {},
+        req: req
+      });
+    }
   },
 
   // Crear cabaña (admin)
@@ -27,8 +40,11 @@ const cabanaController = {
       const { nombre, capacidad, precioNoche, descripcion, fotos } = req.body;
 
       if (!nombre || !capacidad || !precioNoche) {
-        return res.render('cabanas/create', { error: 'Nombre, capacidad y precio son requeridos' });
-      }
+        return       res.render('cabanas/create', {
+        error: 'Nombre, capacidad y precio son requeridos',
+        req: req
+      });
+        }
 
       await Cabana.create({
         nombre,
@@ -42,7 +58,10 @@ const cabanaController = {
       res.redirect('/cabanas');
     } catch (error) {
       console.error('Error al crear cabaña:', error);
-      res.render('cabanas/create', { error: 'Error al crear cabaña' });
+      res.render('cabanas/create', {
+        error: 'Error al crear cabaña',
+        req: req
+      });
     }
   },
 
@@ -66,13 +85,21 @@ const cabanaController = {
       });
 
       if (!cabana) {
-        return res.status(404).render('error', { message: 'Cabaña no encontrada', error: {} });
+        return res.status(404).render('error', {
+          message: 'Cabaña no encontrada',
+          error: {},
+          req: req
+        });
       }
 
       res.render('cabanas/show', { cabana, user: req.session.user });
     } catch (error) {
       console.error('Error al mostrar cabaña:', error);
-      res.status(500).render('error', { message: 'Error al cargar cabaña', error });
+      res.status(500).render('error', {
+        message: 'Error al cargar cabaña',
+        error: process.env.NODE_ENV === 'development' ? error : {},
+        req: req
+      });
     }
   },
 
@@ -83,13 +110,21 @@ const cabanaController = {
       const cabana = await Cabana.findByPk(id);
 
       if (!cabana) {
-        return res.status(404).render('error', { message: 'Cabaña no encontrada', error: {} });
+        return res.status(404).render('error', {
+          message: 'Cabaña no encontrada',
+          error: {},
+          req: req
+        });
       }
 
       res.render('cabanas/edit', { cabana });
     } catch (error) {
       console.error('Error al cargar cabaña:', error);
-      res.status(500).render('error', { message: 'Error al cargar cabaña', error });
+      res.status(500).render('error', {
+        message: 'Error al cargar cabaña',
+        error: process.env.NODE_ENV === 'development' ? error : {},
+        req: req
+      });
     }
   },
 
@@ -101,7 +136,11 @@ const cabanaController = {
 
       const cabana = await Cabana.findByPk(id);
       if (!cabana) {
-        return res.status(404).render('error', { message: 'Cabaña no encontrada', error: {} });
+        return res.status(404).render('error', {
+          message: 'Cabaña no encontrada',
+          error: {},
+          req: req
+        });
       }
 
       await cabana.update({
@@ -116,7 +155,11 @@ const cabanaController = {
       res.redirect('/cabanas');
     } catch (error) {
       console.error('Error al actualizar cabaña:', error);
-      res.status(500).render('error', { message: 'Error al actualizar cabaña', error });
+      res.status(500).render('error', {
+        message: 'Error al actualizar cabaña',
+        error: process.env.NODE_ENV === 'development' ? error : {},
+        req: req
+      });
     }
   },
 

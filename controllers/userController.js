@@ -28,7 +28,16 @@ const userController = {
 
   // Mostrar formulario de creación (admin)
   showCreate: (req, res) => {
-    res.render('users/create');
+    try {
+      res.render('users/create');
+    } catch (error) {
+      console.error('Error al mostrar formulario de creación:', error);
+      res.status(500).render('error', {
+        message: 'Error al cargar formulario',
+        error: process.env.NODE_ENV === 'development' ? error : {},
+        req: req
+      });
+    }
   },
 
   // Crear usuario (admin)

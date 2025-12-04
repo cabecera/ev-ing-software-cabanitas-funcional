@@ -11,7 +11,11 @@ const implementoController = {
       res.render('implementos/list', { implementos });
     } catch (error) {
       console.error('Error al listar implementos:', error);
-      res.status(500).render('error', { message: 'Error al cargar implementos', error });
+      res.status(500).render('error', {
+        message: 'Error al cargar implementos',
+        error: process.env.NODE_ENV === 'development' ? error : {},
+        req: req
+      });
     }
   },
 
@@ -21,8 +25,11 @@ const implementoController = {
       const { nombre, descripcion, stockTotal, precioPrestamo } = req.body;
 
       if (!nombre || !stockTotal) {
-        return res.render('implementos/create', { error: 'Nombre y stock total son requeridos' });
-      }
+        return       res.render('implementos/create', {
+        error: 'Nombre y stock total son requeridos',
+        req: req
+      });
+        }
 
       await Implemento.create({
         nombre,
@@ -35,7 +42,10 @@ const implementoController = {
       res.redirect('/implementos');
     } catch (error) {
       console.error('Error al crear implemento:', error);
-      res.render('implementos/create', { error: 'Error al crear implemento' });
+      res.render('implementos/create', {
+        error: 'Error al crear implemento',
+        req: req
+      });
     }
   },
 
@@ -64,7 +74,10 @@ const implementoController = {
       res.redirect('/implementos');
     } catch (error) {
       console.error('Error al actualizar implemento:', error);
-      res.status(500).json({ error: 'Error al actualizar implemento' });
+      res.status(500).json({
+        error: 'Error al actualizar implemento',
+        message: process.env.NODE_ENV === 'development' ? error.message : 'Error al actualizar implemento'
+      });
     }
   }
 };

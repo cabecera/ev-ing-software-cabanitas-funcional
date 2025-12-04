@@ -16,7 +16,11 @@ const reporteFaltantesController = {
       res.render('reportes/list', { reportes });
     } catch (error) {
       console.error('Error al listar reportes:', error);
-      res.status(500).render('error', { message: 'Error al cargar reportes', error });
+      res.status(500).render('error', {
+        message: 'Error al cargar reportes',
+        error: process.env.NODE_ENV === 'development' ? error : {},
+        req: req
+      });
     }
   },
 
@@ -29,7 +33,11 @@ const reporteFaltantesController = {
       res.render('reportes/create', { cabanas });
     } catch (error) {
       console.error('Error al cargar formulario:', error);
-      res.status(500).render('error', { message: 'Error al cargar formulario', error });
+      res.status(500).render('error', {
+        message: 'Error al cargar formulario',
+        error: process.env.NODE_ENV === 'development' ? error : {},
+        req: req
+      });
     }
   },
 
@@ -39,9 +47,15 @@ const reporteFaltantesController = {
       const { cabanaId, descripcion, itemsFaltantes } = req.body;
 
       if (!cabanaId || !descripcion) {
+        let cabanas = [];
+        try {
+          cabanas = await Cabana.findAll();
+        } catch (cabanaError) {
+          console.error('Error al cargar cabañas:', cabanaError);
+        }
         return res.render('reportes/create', {
           error: 'Cabaña y descripción son requeridos',
-          cabanas: await Cabana.findAll()
+          cabanas: cabanas
         });
       }
 
@@ -55,9 +69,16 @@ const reporteFaltantesController = {
       res.redirect('/reportes/faltantes');
     } catch (error) {
       console.error('Error al crear reporte:', error);
+      let cabanas = [];
+      try {
+        cabanas = await Cabana.findAll();
+      } catch (cabanaError) {
+        console.error('Error al cargar cabañas:', cabanaError);
+      }
       res.render('reportes/create', {
         error: 'Error al crear reporte',
-        cabanas: await Cabana.findAll()
+        cabanas: cabanas,
+        req: req
       });
     }
   },
@@ -81,7 +102,10 @@ const reporteFaltantesController = {
       res.redirect('/reportes/faltantes');
     } catch (error) {
       console.error('Error al resolver reporte:', error);
-      res.status(500).json({ error: 'Error al resolver reporte' });
+      res.status(500).json({
+        error: 'Error al resolver reporte',
+        message: process.env.NODE_ENV === 'development' ? error.message : 'Error al resolver reporte'
+      });
     }
   }
 };

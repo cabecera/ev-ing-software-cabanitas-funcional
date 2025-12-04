@@ -1,7 +1,8 @@
 const db = require('../models');
-const { Mantenimiento, Cabana, Implemento, Reserva, Cliente, User, TareaTrabajador } = db;
+const { Mantenimiento, Cabana, Implemento, User, TareaTrabajador, Reserva, Cliente } = db;
+const { Op } = require('sequelize');
 const { crearNotificacion } = require('./notificacionController');
-const { Op, Sequelize } = require('sequelize');
+const Sequelize = require('sequelize');
 
 const mantenimientoController = {
   // Listar mantenimientos
@@ -9,7 +10,6 @@ const mantenimientoController = {
     try {
       let mantenimientos = [];
       try {
-        // Intentar ordenar por prioridad si el campo existe
         mantenimientos = await Mantenimiento.findAll({
           include: [
             { model: Cabana, as: 'cabana', required: false },
@@ -23,7 +23,6 @@ const mantenimientoController = {
         });
       } catch (error) {
         console.error('Error en query con prioridad, usando ordenamiento simple:', error);
-        // Si falla el ordenamiento, intentar sin prioridad
         try {
           mantenimientos = await Mantenimiento.findAll({
             include: [
@@ -47,20 +46,22 @@ const mantenimientoController = {
             role: 'trabajador',
             activo: true
           },
-          order: [['email', 'ASC']],
-          attributes: ['id', 'email']
+          attributes: ['id', 'email'],
+          order: [['email', 'ASC']]
         });
-      } catch (error) {
-        console.error('Error al cargar trabajadores:', error);
+      } catch (trabError) {
+        console.error('Error al cargar trabajadores:', trabError);
+        trabajadores = [];
       }
 
       res.render('mantenimientos/list', {
         mantenimientos: mantenimientos || [],
         trabajadores: trabajadores || [],
-        req: req
+        req: req,
+        user: req.session.user
       });
     } catch (error) {
-      console.error('Error al listar mantenimientos:', error);
+      console.error('Error al cargar mantenimientos:', error);
       res.status(500).render('error', {
         message: 'Error al cargar mantenimientos',
         error: process.env.NODE_ENV === 'development' ? error : {},
@@ -72,45 +73,52 @@ const mantenimientoController = {
   // Mostrar formulario de creación
   showCreate: async (req, res) => {
     try {
+      // Cargar cabañas
       let cabanas = [];
-      let implementos = [];
-      let trabajadores = [];
-
       try {
         cabanas = await Cabana.findAll({
           order: [['nombre', 'ASC']]
         });
-      } catch (error) {
-        console.error('Error al cargar cabañas:', error);
+      } catch (cabanaError) {
+        console.error('Error al cargar cabañas:', cabanaError);
+        cabanas = [];
       }
 
+      // Cargar implementos
+      let implementos = [];
       try {
         implementos = await Implemento.findAll({
           order: [['nombre', 'ASC']]
         });
-      } catch (error) {
-        console.error('Error al cargar implementos:', error);
+      } catch (implementoError) {
+        console.error('Error al cargar implementos:', implementoError);
+        implementos = [];
       }
 
+      // Cargar trabajadores activos
+      let trabajadores = [];
       try {
         trabajadores = await User.findAll({
           where: {
             role: 'trabajador',
             activo: true
           },
-          order: [['nombre', 'ASC']]
+          attributes: ['id', 'email'],
+          order: [['email', 'ASC']]
         });
-      } catch (error) {
-        console.error('Error al cargar trabajadores:', error);
+      } catch (trabError) {
+        console.error('Error al cargar trabajadores:', trabError);
+        trabajadores = [];
       }
 
       res.render('mantenimientos/create', {
         cabanas: cabanas || [],
         implementos: implementos || [],
-        trabajadores: trabajadores || []
+        trabajadores: trabajadores || [],
+        error: null
       });
     } catch (error) {
-      console.error('Error al cargar formulario:', error);
+      console.error('Error al cargar formulario de mantenimiento:', error);
       res.status(500).render('error', {
         message: 'Error al cargar formulario',
         error: process.env.NODE_ENV === 'development' ? error : {},
@@ -136,6 +144,8 @@ const mantenimientoController = {
         descripcion,
         prioridad,
         trabajadorId,
+        requierePersonalExterno,
+        personalExterno,
         inspeccionElectrica,
         revisionGas,
         mantencionEstufas,
@@ -143,58 +153,10 @@ const mantenimientoController = {
         controlMuebles,
         controlUtensilios,
         controlRopaCama,
-        inspeccionAreasComunes,
-        requierePersonalExterno,
-        personalExterno
+        inspeccionAreasComunes
       } = req.body;
 
-      const userId = req.session.user?.id;
-
-      // Validaciones
-      if (!tipoObjeto || !fechaInicio || !fechaFin || !categoria || !tipo) {
-        await transaction.rollback();
-        const [cabanas, implementos, trabajadores] = await Promise.allSettled([
-          Cabana.findAll({ order: [['nombre', 'ASC']] }),
-          Implemento.findAll({ order: [['nombre', 'ASC']] }),
-          User.findAll({ where: { role: 'trabajador', activo: true }, order: [['email', 'ASC']], attributes: ['id', 'email'] })
-        ]);
-        return res.render('mantenimientos/create', {
-          error: 'Los campos tipo, fecha inicio, fecha fin y categoría son requeridos',
-          cabanas: cabanas.status === 'fulfilled' ? cabanas.value : [],
-          implementos: implementos.status === 'fulfilled' ? implementos.value : [],
-          trabajadores: trabajadores.status === 'fulfilled' ? trabajadores.value : []
-        });
-      }
-
-      if (tipoObjeto === 'cabana' && !cabanaId) {
-        await transaction.rollback();
-        const [cabanas, implementos, trabajadores] = await Promise.allSettled([
-          Cabana.findAll({ order: [['nombre', 'ASC']] }),
-          Implemento.findAll({ order: [['nombre', 'ASC']] }),
-          User.findAll({ where: { role: 'trabajador', activo: true }, order: [['email', 'ASC']], attributes: ['id', 'email'] })
-        ]);
-        return res.render('mantenimientos/create', {
-          error: 'Debe seleccionar una cabaña',
-          cabanas: cabanas.status === 'fulfilled' ? cabanas.value : [],
-          implementos: implementos.status === 'fulfilled' ? implementos.value : [],
-          trabajadores: trabajadores.status === 'fulfilled' ? trabajadores.value : []
-        });
-      }
-
-      if (tipoObjeto === 'implemento' && !implementoId) {
-        await transaction.rollback();
-        const [cabanas, implementos, trabajadores] = await Promise.allSettled([
-          Cabana.findAll({ order: [['nombre', 'ASC']] }),
-          Implemento.findAll({ order: [['nombre', 'ASC']] }),
-          User.findAll({ where: { role: 'trabajador', activo: true }, order: [['email', 'ASC']], attributes: ['id', 'email'] })
-        ]);
-        return res.render('mantenimientos/create', {
-          error: 'Debe seleccionar un implemento',
-          cabanas: cabanas.status === 'fulfilled' ? cabanas.value : [],
-          implementos: implementos.status === 'fulfilled' ? implementos.value : [],
-          trabajadores: trabajadores.status === 'fulfilled' ? trabajadores.value : []
-        });
-      }
+      const userId = req.session.user.id;
 
       // Validar trabajador si se proporciona
       if (trabajadorId) {
@@ -258,219 +220,129 @@ const mantenimientoController = {
           try {
             await crearNotificacion(
               parseInt(trabajadorId),
-              'Nueva Tarea de Mantenimiento Asignada',
-              `Se te ha asignado un mantenimiento ${categoria} para ${nombreObjeto}. Tipo: ${tipo}. Fechas: ${new Date(fechaInicio).toLocaleDateString()} al ${new Date(fechaFin).toLocaleDateString()}`,
+              'Nueva Tarea Asignada',
+              `Se te ha asignado una nueva tarea de mantenimiento: ${tipo} para ${nombreObjeto}`,
               'info'
             );
           } catch (notifError) {
             console.error('Error al notificar trabajador:', notifError);
-            // No fallar si la notificación falla
           }
         } catch (tareaError) {
           console.error('Error al crear tarea de trabajador:', tareaError);
-          // No fallar si la creación de tarea falla, pero registrar el error
+          // Continuar aunque falle la creación de la tarea
         }
       }
 
-      // Cambiar estado de cabaña a mantenimiento si aplica
+      // Notificar a clientes afectados
       if (tipoObjeto === 'cabana' && cabanaId) {
         try {
-          await Cabana.update(
-            { estado: 'mantenimiento' },
-            { where: { id: cabanaId }, transaction }
-          );
-
-          // Notificar a clientes con reservas afectadas (sin bloquear si falla)
-          notificarClientesAfectados(cabanaId, fechaInicio, fechaFin, mantenimiento.id)
-            .catch(error => console.error('Error al notificar clientes:', error));
-        } catch (cabanaError) {
-          console.error('Error al actualizar estado de cabaña:', cabanaError);
-          // Continuar aunque falle la actualización de estado
+          await notificarClientesAfectados(parseInt(cabanaId), fechaInicio, fechaFin, mantenimiento.id);
+        } catch (notifError) {
+          console.error('Error al notificar clientes afectados:', notifError);
         }
       }
 
       await transaction.commit();
       res.redirect('/mantenimientos');
     } catch (error) {
-      await transaction.rollback().catch(() => {});
+      await transaction.rollback();
       console.error('Error al crear mantenimiento:', error);
 
+      // Recargar datos para el formulario
       let cabanas = [];
       let implementos = [];
       let trabajadores = [];
 
       try {
-        [cabanas, implementos, trabajadores] = await Promise.allSettled([
-          Cabana.findAll({ order: [['nombre', 'ASC']] }),
-          Implemento.findAll({ order: [['nombre', 'ASC']] }),
-          User.findAll({ where: { role: 'trabajador', activo: true }, order: [['email', 'ASC']], attributes: ['id', 'email'] })
-        ]);
+        cabanas = await Cabana.findAll({ order: [['nombre', 'ASC']] });
+        implementos = await Implemento.findAll({ order: [['nombre', 'ASC']] });
+        trabajadores = await User.findAll({
+          where: { role: 'trabajador', activo: true },
+          attributes: ['id', 'email'],
+          order: [['email', 'ASC']]
+        });
       } catch (loadError) {
-        console.error('Error al cargar datos para mostrar error:', loadError);
+        console.error('Error al recargar datos del formulario:', loadError);
       }
 
       res.render('mantenimientos/create', {
-        error: error.message || 'Error al crear mantenimiento',
-        cabanas: Array.isArray(cabanas) ? cabanas : (cabanas.status === 'fulfilled' ? cabanas.value : []),
-        implementos: Array.isArray(implementos) ? implementos : (implementos.status === 'fulfilled' ? implementos.value : []),
-        trabajadores: Array.isArray(trabajadores) ? trabajadores : (trabajadores.status === 'fulfilled' ? trabajadores.value : [])
+        cabanas,
+        implementos,
+        trabajadores,
+        error: error.message || 'Error al crear mantenimiento. Intenta nuevamente.'
       });
     }
   },
 
-  // Asignar trabajador a mantenimiento existente (para encargados y admin)
+  // Asignar trabajador a mantenimiento existente
   asignarTrabajador: async (req, res) => {
     const transaction = await db.sequelize.transaction();
-
     try {
       const { id } = req.params;
       const { trabajadorId } = req.body;
-      const userId = req.session.user?.id;
+      const userId = req.session.user.id;
 
-      if (!userId) {
-        await transaction.rollback();
-        return res.status(401).json({ error: 'No autorizado' });
-      }
-
-      if (!trabajadorId) {
-        await transaction.rollback();
-        return res.status(400).json({ error: 'Debe seleccionar un trabajador' });
-      }
-
-      const mantenimiento = await Mantenimiento.findByPk(id, {
-        include: [
-          { model: Cabana, as: 'cabana', required: false },
-          { model: Implemento, as: 'implemento', required: false }
-        ],
-        transaction
-      });
-
+      const mantenimiento = await Mantenimiento.findByPk(id, { transaction });
       if (!mantenimiento) {
         await transaction.rollback();
         return res.status(404).json({ error: 'Mantenimiento no encontrado' });
       }
 
       // Validar trabajador
-      const trabajador = await User.findByPk(trabajadorId, { transaction });
-      if (!trabajador || trabajador.role !== 'trabajador' || !trabajador.activo) {
-        await transaction.rollback();
-        return res.status(400).json({ error: 'Trabajador no válido o inactivo' });
+      if (trabajadorId) {
+        const trabajador = await User.findByPk(trabajadorId, { transaction });
+        if (!trabajador || trabajador.role !== 'trabajador' || !trabajador.activo) {
+          await transaction.rollback();
+          return res.status(400).json({ error: 'Trabajador no válido o inactivo' });
+        }
       }
 
-      // Actualizar mantenimiento
-      await mantenimiento.update({
-        trabajadorId: parseInt(trabajadorId)
-      }, { transaction });
+      await mantenimiento.update({ trabajadorId: trabajadorId ? parseInt(trabajadorId) : null }, { transaction });
 
       // Crear o actualizar TareaTrabajador
-      try {
-        const nombreObjeto = mantenimiento.cabana
-          ? mantenimiento.cabana.nombre
-          : (mantenimiento.implemento ? mantenimiento.implemento.nombre : 'Objeto');
+      let tarea = await TareaTrabajador.findOne({ where: { mantenimientoId: mantenimiento.id }, transaction });
+      if (tarea) {
+        await tarea.update({
+          trabajadorId: parseInt(trabajadorId),
+          asignadoPor: userId,
+          estado: 'pendiente',
+          fechaAsignacion: new Date()
+        }, { transaction });
+      } else {
+        const nombreObjeto = mantenimiento.cabanaId
+          ? await Cabana.findByPk(mantenimiento.cabanaId).then(c => c?.nombre || 'Cabaña')
+          : await Implemento.findByPk(mantenimiento.implementoId).then(i => i?.nombre || 'Implemento');
 
-        // Verificar si ya existe una tarea para este mantenimiento
-        const tareaExistente = await TareaTrabajador.findOne({
-          where: { mantenimientoId: id },
-          transaction
-        });
-
-        if (tareaExistente) {
-          await tareaExistente.update({
-            trabajadorId: parseInt(trabajadorId),
-            asignadoPor: userId,
-            estado: 'pendiente'
-          }, { transaction });
-        } else {
-          await TareaTrabajador.create({
-            trabajadorId: parseInt(trabajadorId),
-            asignadoPor: userId,
-            mantenimientoId: mantenimiento.id,
-            cabanaId: mantenimiento.cabanaId,
-            tipo: 'mantenimiento',
-            descripcion: `Mantenimiento ${mantenimiento.categoria}: ${mantenimiento.tipo} - ${mantenimiento.descripcion || 'Sin descripción adicional'}`,
-            estado: 'pendiente',
-            fechaAsignacion: new Date()
-          }, { transaction });
-        }
-
-        // Notificar al trabajador
-        try {
-          await crearNotificacion(
-            parseInt(trabajadorId),
-            'Tarea de Mantenimiento Asignada',
-            `Se te ha asignado un mantenimiento ${mantenimiento.categoria} para ${nombreObjeto}. Tipo: ${mantenimiento.tipo}. Fechas: ${new Date(mantenimiento.fechaInicio).toLocaleDateString()} al ${new Date(mantenimiento.fechaFin).toLocaleDateString()}`,
-            'info'
-          );
-        } catch (notifError) {
-          console.error('Error al notificar trabajador:', notifError);
-        }
-      } catch (tareaError) {
-        console.error('Error al crear/actualizar tarea de trabajador:', tareaError);
-        // Continuar aunque falle la creación de tarea
+        await TareaTrabajador.create({
+          trabajadorId: parseInt(trabajadorId),
+          asignadoPor: userId,
+          mantenimientoId: mantenimiento.id,
+          cabanaId: mantenimiento.cabanaId,
+          tipo: 'mantenimiento',
+          descripcion: `Mantenimiento ${mantenimiento.categoria}: ${mantenimiento.tipo} - ${mantenimiento.descripcion || 'Sin descripción adicional'}`,
+          estado: 'pendiente',
+          fechaAsignacion: new Date()
+        }, { transaction });
       }
 
-      await transaction.commit();
-      res.json({ success: true, message: 'Trabajador asignado correctamente' });
-    } catch (error) {
-      await transaction.rollback().catch(() => {});
-      console.error('Error al asignar trabajador:', error);
-      res.status(500).json({ error: error.message || 'Error al asignar trabajador' });
-    }
-  },
-
-  // Completar mantenimiento
-  completar: async (req, res) => {
-    const transaction = await db.sequelize.transaction();
-
-    try {
-      const { id } = req.params;
-      const mantenimiento = await Mantenimiento.findByPk(id, {
-        include: [
-          { model: Cabana, as: 'cabana', required: false },
-          { model: Implemento, as: 'implemento', required: false }
-        ],
-        transaction
-      });
-
-      if (!mantenimiento) {
-        await transaction.rollback();
-        return res.status(404).json({ error: 'Mantenimiento no encontrado' });
-      }
-
-      await mantenimiento.update({
-        estado: 'completado'
-      }, { transaction });
-
-      // Actualizar tareas relacionadas
+      // Notificar al trabajador
       try {
-        await TareaTrabajador.update(
-          { estado: 'completada', fechaCompletado: new Date() },
-          { where: { mantenimientoId: id }, transaction }
+        await crearNotificacion(
+          parseInt(trabajadorId),
+          'Nueva Tarea Asignada',
+          `Se te ha asignado una nueva tarea de mantenimiento: ${mantenimiento.tipo}`,
+          'info'
         );
-      } catch (tareaError) {
-        console.error('Error al actualizar tareas:', tareaError);
-        // Continuar aunque falle
-      }
-
-      // Liberar cabaña o implemento
-      if (mantenimiento.cabanaId) {
-        try {
-          await Cabana.update(
-            { estado: 'disponible' },
-            { where: { id: mantenimiento.cabanaId }, transaction }
-          );
-        } catch (cabanaError) {
-          console.error('Error al liberar cabaña:', cabanaError);
-          // Continuar aunque falle
-        }
+      } catch (notifError) {
+        console.error('Error al notificar trabajador:', notifError);
       }
 
       await transaction.commit();
       res.redirect('/mantenimientos');
     } catch (error) {
-      await transaction.rollback().catch(() => {});
-      console.error('Error al completar mantenimiento:', error);
-      res.status(500).json({ error: 'Error al completar mantenimiento' });
+      await transaction.rollback();
+      console.error('Error al asignar trabajador:', error);
+      res.status(500).json({ error: error.message || 'Error al asignar trabajador' });
     }
   },
 
@@ -577,62 +449,41 @@ const mantenimientoController = {
   }
 };
 
-// Función auxiliar para notificar a clientes afectados
+// Función helper para notificar clientes afectados
 async function notificarClientesAfectados(cabanaId, fechaInicio, fechaFin, mantenimientoId) {
   try {
-    const fechaInicioMant = new Date(fechaInicio);
-    const fechaFinMant = new Date(fechaFin);
-
-    // Buscar reservas que se solapen con el período de mantenimiento
     const reservasAfectadas = await Reserva.findAll({
       where: {
-        cabanaId: parseInt(cabanaId),
+        cabanaId: cabanaId,
         estado: { [Op.in]: ['pendiente', 'confirmada'] },
         [Op.or]: [
           {
-            fechaInicio: { [Op.between]: [fechaInicioMant, fechaFinMant] }
-          },
-          {
-            fechaFin: { [Op.between]: [fechaInicioMant, fechaFinMant] }
-          },
-          {
             [Op.and]: [
-              { fechaInicio: { [Op.lte]: fechaInicioMant } },
-              { fechaFin: { [Op.gte]: fechaFinMant } }
+              { fechaInicio: { [Op.lte]: fechaFin } },
+              { fechaFin: { [Op.gte]: fechaInicio } }
             ]
           }
         ]
       },
       include: [
-        {
-          model: Cliente,
-          as: 'cliente',
-          required: false,
-          include: [{ model: User, as: 'user', required: false }]
-        },
-        { model: Cabana, as: 'cabana', required: false }
+        { model: Cliente, as: 'cliente', include: [{ model: User, as: 'user' }] },
+        { model: Cabana, as: 'cabana' }
       ]
     });
 
-    // Notificar a cada cliente afectado
     for (const reserva of reservasAfectadas) {
-      try {
-        if (reserva.cliente && reserva.cliente.user) {
-          await crearNotificacion(
-            reserva.cliente.user.id,
-            'Mantenimiento Programado - Cabaña No Disponible',
-            `Se ha programado un mantenimiento para la cabaña "${reserva.cabana?.nombre || 'N/A'}" del ${new Date(fechaInicio).toLocaleDateString()} al ${new Date(fechaFin).toLocaleDateString()}, que afecta tu reserva del ${new Date(reserva.fechaInicio).toLocaleDateString()} al ${new Date(reserva.fechaFin).toLocaleDateString()}. Por favor contacta a la administración para coordinar alternativas (reembolso o reprogramación).`,
-            'warning'
-          );
-        }
-      } catch (notifError) {
-        console.error('Error al notificar cliente individual:', notifError);
-        // Continuar con el siguiente cliente
+      if (reserva.cliente && reserva.cliente.user) {
+        await crearNotificacion(
+          reserva.cliente.user.id,
+          'Mantenimiento Programado - Afecta tu Reserva',
+          `Se ha programado un mantenimiento para la cabaña "${reserva.cabana.nombre}" del ${new Date(fechaInicio).toLocaleDateString()} al ${new Date(fechaFin).toLocaleDateString()}, que se solapa con tu reserva. Por favor contacta con nosotros para coordinar.`,
+          'warning'
+        );
       }
     }
   } catch (error) {
     console.error('Error al notificar clientes afectados:', error);
-    // No lanzar error para no interrumpir la creación del mantenimiento
+    // No lanzar error, solo registrar
   }
 }
 
