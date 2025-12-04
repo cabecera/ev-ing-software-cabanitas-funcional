@@ -2,6 +2,9 @@ const db = require('../models');
 const { Reserva, Cabana, Cliente, Pago, EncuestaSatisfaccion, PrestamoImplemento, Implemento } = db;
 const { Op } = require('sequelize');
 
+// Importar EncuestaSatisfaccion si no está disponible directamente
+const { EncuestaSatisfaccion: EncuestaSatisfaccionModel } = db;
+
 const reportesController = {
   // Dashboard de reportes
   dashboard: async (req, res) => {
@@ -137,6 +140,48 @@ const reportesController = {
         ? encuestas.reduce((sum, e) => sum + (parseFloat(e.calificacionGeneral) || 0), 0) / encuestas.length
         : 0;
 
+      // Estadísticas detalladas de satisfacción
+      const encuestasConDetalles = await EncuestaSatisfaccion.findAll({
+        where: {
+          createdAt: { [Op.between]: [fechaInicio, fechaFin] }
+        },
+        include: [
+          {
+            model: Reserva,
+            as: 'reserva',
+            required: false,
+            include: [
+              { model: Cabana, as: 'cabana', required: false },
+              { model: Cliente, as: 'cliente', required: false }
+            ]
+          }
+        ],
+        order: [['createdAt', 'DESC']]
+      }).catch(() => []);
+
+      // Calcular promedios detallados
+      const encuestasConLimpieza = encuestasConDetalles.filter(e => e && e.calificacionLimpieza != null);
+      const encuestasConServicio = encuestasConDetalles.filter(e => e && e.calificacionServicio != null);
+      const encuestasConPrecio = encuestasConDetalles.filter(e => e && e.calificacionPrecio != null);
+
+      const estadisticasSatisfaccion = {
+        totalEncuestas: encuestasConDetalles.length,
+        promedioGeneral: promedioSatisfaccion,
+        promedioLimpieza: encuestasConLimpieza.length > 0
+          ? encuestasConLimpieza.reduce((sum, e) => sum + (parseFloat(e.calificacionLimpieza) || 0), 0) / encuestasConLimpieza.length
+          : 0,
+        promedioServicio: encuestasConServicio.length > 0
+          ? encuestasConServicio.reduce((sum, e) => sum + (parseFloat(e.calificacionServicio) || 0), 0) / encuestasConServicio.length
+          : 0,
+        promedioPrecio: encuestasConPrecio.length > 0
+          ? encuestasConPrecio.reduce((sum, e) => sum + (parseFloat(e.calificacionPrecio) || 0), 0) / encuestasConPrecio.length
+          : 0,
+        totalRecomendarian: encuestasConDetalles.filter(e => e && e.recomendaria === true).length,
+        porcentajeRecomendaria: encuestasConDetalles.length > 0
+          ? (encuestasConDetalles.filter(e => e && e.recomendaria === true).length / encuestasConDetalles.length) * 100
+          : 0
+      };
+
       // Historial de ingresos - todos los pagos completados en el período
       const historialPagos = await Pago.findAll({
         where: {
@@ -215,6 +260,8 @@ const reportesController = {
         ocupacionPorCabana: ocupacionPorCabana || {},
         clientesFrecuentes: clientesFrecuentes || [],
         promedioSatisfaccion: promedioSatisfaccion || 0,
+        estadisticasSatisfaccion: estadisticasSatisfaccion || {},
+        encuestasDetalladas: encuestasConDetalles || [],
         historialIngresos: historialFormateado || [],
         fechaInicio: fechaInicio.toISOString().split('T')[0],
         fechaFin: req.query.fechaFin ? new Date(req.query.fechaFin).toISOString().split('T')[0] : fechaFin.toISOString().split('T')[0],

@@ -6,14 +6,31 @@ const encuestaController = {
   showForm: async (req, res) => {
     try {
       const { reservaId } = req.params;
-      const clienteId = req.session.user.clienteId;
+      const clienteId = req.session.user?.clienteId;
+
+      if (!clienteId) {
+        return res.status(403).render('error', { message: 'No tienes permiso para acceder a esta página', error: {} });
+      }
 
       const reserva = await Reserva.findByPk(reservaId, {
         include: [{ model: db.Cabana, as: 'cabana' }]
       });
 
-      if (!reserva || reserva.clienteId !== clienteId || reserva.estado !== 'completada') {
-        return res.status(404).render('error', { message: 'Reserva no encontrada o no completada', error: {} });
+      if (!reserva) {
+        return res.status(404).render('error', { message: 'Reserva no encontrada', error: {} });
+      }
+
+      if (reserva.clienteId !== clienteId) {
+        return res.status(403).render('error', { message: 'No tienes permiso para ver esta reserva', error: {} });
+      }
+
+      // Aceptar reservas confirmadas o completadas (para prototipo)
+      const estadosPermitidos = ['confirmada', 'completada'];
+      if (!estadosPermitidos.includes(reserva.estado)) {
+        return res.status(400).render('error', {
+          message: `Solo se pueden responder encuestas para reservas confirmadas o completadas. Estado actual: ${reserva.estado}`,
+          error: {}
+        });
       }
 
       // Verificar si ya completó la encuesta
@@ -51,6 +68,29 @@ const encuestaController = {
         comentarios: comentarios || null,
         recomendaria: recomendaria === 'true'
       });
+
+      // Notificar a administradores sobre la nueva encuesta
+      const { crearNotificacion } = require('./notificacionController');
+      const { User, Cabana } = db;
+
+      try {
+        const reservaConCabana = await Reserva.findByPk(reservaId, {
+          include: [{ model: Cabana, as: 'cabana', required: false }]
+        });
+
+        const admins = await User.findAll({ where: { role: 'admin', activo: true } });
+        for (const admin of admins) {
+          await crearNotificacion(
+            admin.id,
+            'Nueva Encuesta de Satisfacción',
+            `Un cliente ha completado una encuesta de satisfacción para la reserva #${reservaId} de la cabaña "${reservaConCabana && reservaConCabana.cabana ? reservaConCabana.cabana.nombre : 'N/A'}". Calificación: ${calificacionGeneral}/5`,
+            'info'
+          );
+        }
+      } catch (notifError) {
+        console.error('Error al notificar administradores sobre encuesta:', notifError);
+        // No fallar el proceso si las notificaciones fallan
+      }
 
       res.redirect('/reservas/mis-reservas?encuesta=gracias');
     } catch (error) {

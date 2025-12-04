@@ -25,17 +25,24 @@
                 <td>$<%= parseFloat(reserva.montoCotizado).toLocaleString() %></td>
                 <td><span class="badge badge-<%= reserva.estado %>"><%= reserva.estado %></span></td>
                 <td>
+                    <%
+                        // Variables de fecha para uso en múltiples condiciones
+                        const fechaInicio = new Date(reserva.fechaInicio);
+                        const fechaFinReserva = new Date(reserva.fechaFin);
+                        const hoy = new Date();
+                        hoy.setHours(0, 0, 0, 0);
+                        fechaInicio.setHours(0, 0, 0, 0);
+                        fechaFinReserva.setHours(0, 0, 0, 0);
+
+                        const puedeCheckin = reserva.estado === 'confirmada' && reserva.pago && reserva.pago.estado === 'completado' && fechaInicio <= hoy;
+                        // Puede responder encuesta si: está confirmada y no tiene encuesta completada (prototipo)
+                        const puedeResponderEncuesta = reserva.estado === 'confirmada' && !reserva.encuestaCompletada;
+                    %>
                     <% if (reserva.estado === 'confirmada' || reserva.estado === 'pendiente') { %>
                         <% if (!reserva.pago || parseFloat(reserva.pago.monto || 0) < parseFloat(reserva.montoCotizado)) { %>
                             <a href="/pagos/reserva/<%= reserva.id %>" class="btn btn-success btn-sm">Pagar</a>
                         <% } %>
                     <% } %>
-                    <%
-                        const fechaInicio = new Date(reserva.fechaInicio);
-                        const hoy = new Date();
-                        hoy.setHours(0, 0, 0, 0);
-                        const puedeCheckin = reserva.estado === 'confirmada' && reserva.pago && reserva.pago.estado === 'completado' && fechaInicio <= hoy;
-                    %>
                     <% if (puedeCheckin) { %>
                         <a href="/checkin/<%= reserva.id %>" class="btn btn-primary btn-sm">Check-in</a>
                     <% } %>
@@ -44,7 +51,7 @@
                             <button type="submit" class="btn btn-danger btn-sm">Cancelar</button>
                         </form>
                     <% } %>
-                    <% if (reserva.estado === 'completada' && !reserva.encuestaCompletada) { %>
+                    <% if (puedeResponderEncuesta) { %>
                         <a href="/encuestas/<%= reserva.id %>" class="btn btn-info btn-sm">Completar Encuesta</a>
                     <% } %>
                     <% if (reserva.estado !== 'cancelada') { %>

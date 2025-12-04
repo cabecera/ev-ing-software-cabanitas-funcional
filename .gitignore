@@ -4,4 +4,4 @@ node_modules/
 *.log
 .sequelize/
 coverage/
-
+EVALUACION_PROYECTO.md

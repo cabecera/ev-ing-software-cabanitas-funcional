@@ -82,6 +82,74 @@
 </div>
 <% } %>
 
+<h2>Estadísticas de Satisfacción</h2>
+<% if (typeof estadisticasSatisfaccion !== 'undefined' && estadisticasSatisfaccion.totalEncuestas > 0) { %>
+<div class="stats-grid" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <h3>Total Encuestas</h3>
+        <p class="stat-number"><%= estadisticasSatisfaccion.totalEncuestas %></p>
+    </div>
+    <div class="stat-card">
+        <h3>Calificación General</h3>
+        <p class="stat-number"><%= estadisticasSatisfaccion.promedioGeneral.toFixed(2) %>/5</p>
+    </div>
+    <div class="stat-card">
+        <h3>Limpieza</h3>
+        <p class="stat-number"><%= estadisticasSatisfaccion.promedioLimpieza.toFixed(2) %>/5</p>
+    </div>
+    <div class="stat-card">
+        <h3>Servicio</h3>
+        <p class="stat-number"><%= estadisticasSatisfaccion.promedioServicio.toFixed(2) %>/5</p>
+    </div>
+    <div class="stat-card">
+        <h3>Precio</h3>
+        <p class="stat-number"><%= estadisticasSatisfaccion.promedioPrecio.toFixed(2) %>/5</p>
+    </div>
+    <div class="stat-card">
+        <h3>% Recomendarían</h3>
+        <p class="stat-number"><%= estadisticasSatisfaccion.porcentajeRecomendaria.toFixed(1) %>%</p>
+    </div>
+</div>
+
+<div class="table-container">
+    <h3>Encuestas Detalladas</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Cabaña</th>
+                <th>General</th>
+                <th>Limpieza</th>
+                <th>Servicio</th>
+                <th>Precio</th>
+                <th>Recomendaría</th>
+                <th>Comentarios</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (typeof encuestasDetalladas !== 'undefined' && encuestasDetalladas.length > 0) { %>
+                <% encuestasDetalladas.forEach(encuesta => { %>
+                <tr>
+                    <td><%= new Date(encuesta.createdAt).toLocaleDateString() %></td>
+                    <td><%= encuesta.reserva && encuesta.reserva.cliente ? encuesta.reserva.cliente.nombre + ' ' + encuesta.reserva.cliente.apellido : 'N/A' %></td>
+                    <td><%= encuesta.reserva && encuesta.reserva.cabana ? encuesta.reserva.cabana.nombre : 'N/A' %></td>
+                    <td><%= encuesta.calificacionGeneral || 'N/A' %>/5</td>
+                    <td><%= encuesta.calificacionLimpieza || 'N/A' %><%= encuesta.calificacionLimpieza ? '/5' : '' %></td>
+                    <td><%= encuesta.calificacionServicio || 'N/A' %><%= encuesta.calificacionServicio ? '/5' : '' %></td>
+                    <td><%= encuesta.calificacionPrecio || 'N/A' %><%= encuesta.calificacionPrecio ? '/5' : '' %></td>
+                    <td><%= encuesta.recomendaria ? 'Sí' : 'No' %></td>
+                    <td><%= encuesta.comentarios || 'Sin comentarios' %></td>
+                </tr>
+                <% }); %>
+            <% } %>
+        </tbody>
+    </table>
+</div>
+<% } else { %>
+<p>No hay encuestas de satisfacción en el período seleccionado.</p>
+<% } %>
+
 <h2>Historial de Ingresos</h2>
 <% if (typeof historialIngresos !== 'undefined' && historialIngresos.length > 0) { %>
 <div class="table-container">

@@ -69,13 +69,25 @@ const reservaController = {
         order: [['fechaInicio', 'DESC']]
       });
 
-      // Verificar si hay encuestas completadas
+      // Verificar si hay encuestas completadas y actualizar estado de reservas completadas
       const { EncuestaSatisfaccion } = db;
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+
       for (const reserva of reservas) {
-        if (reserva.estado === 'completada') {
-          const encuesta = await EncuestaSatisfaccion.findOne({ where: { reservaId: reserva.id } });
-          reserva.encuestaCompletada = !!encuesta;
+        // Si la reserva está confirmada y la fecha de fin ya pasó, marcarla como completada
+        if (reserva.estado === 'confirmada') {
+          const fechaFin = new Date(reserva.fechaFin);
+          fechaFin.setHours(0, 0, 0, 0);
+          if (fechaFin < hoy) {
+            await reserva.update({ estado: 'completada' });
+            reserva.estado = 'completada';
+          }
         }
+
+        // Verificar si hay encuesta completada (para todas las reservas, no solo completadas)
+        const encuesta = await EncuestaSatisfaccion.findOne({ where: { reservaId: reserva.id } });
+        reserva.encuestaCompletada = !!encuesta;
       }
 
       res.render('reservas/mis_reservas', { reservas });
