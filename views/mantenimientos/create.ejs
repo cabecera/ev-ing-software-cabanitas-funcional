@@ -8,16 +8,43 @@
 <% } %>
 
 <form method="POST" action="/mantenimientos/crear" class="form">
+    <!-- Tipo de Objeto -->
     <div class="form-group">
-        <label for="cabanaId">Cabaña:</label>
-        <select id="cabanaId" name="cabanaId" required>
-            <option value="">Seleccione una cabaña</option>
-            <% cabanas.forEach(cabana => { %>
-                <option value="<%= cabana.id %>"><%= cabana.nombre %></option>
-            <% }); %>
+        <label for="tipoObjeto">Tipo de Objeto:</label>
+        <select id="tipoObjeto" name="tipoObjeto" required onchange="toggleObjectSelection()">
+            <option value="">Seleccione un tipo</option>
+            <option value="cabana">Cabaña</option>
+            <option value="implemento">Implemento</option>
         </select>
     </div>
 
+    <!-- Selección de Cabaña -->
+    <div class="form-group" id="cabanaGroup" style="display: none;">
+        <label for="cabanaId">Cabaña:</label>
+        <select id="cabanaId" name="cabanaId">
+            <option value="">Seleccione una cabaña</option>
+            <% if (typeof cabanas !== 'undefined' && cabanas) { %>
+                <% cabanas.forEach(cabana => { %>
+                    <option value="<%= cabana.id %>"><%= cabana.nombre %></option>
+                <% }); %>
+            <% } %>
+        </select>
+    </div>
+
+    <!-- Selección de Implemento -->
+    <div class="form-group" id="implementoGroup" style="display: none;">
+        <label for="implementoId">Implemento:</label>
+        <select id="implementoId" name="implementoId">
+            <option value="">Seleccione un implemento</option>
+            <% if (typeof implementos !== 'undefined' && implementos) { %>
+                <% implementos.forEach(implemento => { %>
+                    <option value="<%= implemento.id %>"><%= implemento.nombre %></option>
+                <% }); %>
+            <% } %>
+        </select>
+    </div>
+
+    <!-- Fechas -->
     <div class="form-group">
         <label for="fechaInicio">Fecha de Inicio:</label>
         <input type="date" id="fechaInicio" name="fechaInicio" required>
@@ -28,19 +55,235 @@
         <input type="date" id="fechaFin" name="fechaFin" required>
     </div>
 
+    <!-- Categoría -->
     <div class="form-group">
-        <label for="tipo">Tipo:</label>
-        <input type="text" id="tipo" name="tipo" required>
+        <label for="categoria">Categoría:</label>
+        <select id="categoria" name="categoria" required onchange="mostrarLeyendaCategoria()">
+            <option value="">Seleccione una categoría</option>
+            <option value="preventivo">Preventivo</option>
+            <option value="correctivo">Correctivo</option>
+        </select>
+        <div id="leyendaCategoria" style="margin-top: 0.5rem; padding: 0.75rem; background-color: #e7f3ff; border-left: 4px solid #4a90e2; border-radius: 4px; display: none;">
+            <strong>Preventivo:</strong> Mantenimiento planificado y periódico para prevenir fallas. Incluye inspecciones regulares, limpieza profunda, revisión de instalaciones eléctricas y de gas, mantención de estufas y leñeras, control de muebles, utensilios y ropa de cama, e inspección de áreas comunes. Permite planificar reparaciones menores y reemplazo de insumos antes de que afecten la experiencia del cliente.
+        </div>
+        <div id="leyendaCorrectivo" style="margin-top: 0.5rem; padding: 0.75rem; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; display: none;">
+            <strong>Correctivo:</strong> Intervención inmediata frente a daños o fallas detectadas por el personal, clientes o durante revisiones preventivas. Incluye reparación de electrodomésticos, muebles, utensilios, infraestructura de cabañas o implementos recreativos. Cuando se requiere conocimiento técnico especializado, estas tareas son realizadas por personal externo.
+        </div>
     </div>
 
+    <!-- Tipo General -->
     <div class="form-group">
-        <label for="descripcion">Descripción:</label>
-        <textarea id="descripcion" name="descripcion" rows="4"></textarea>
+        <label for="tipo">Tipo (General):</label>
+        <select id="tipo" name="tipo" required>
+            <option value="">Seleccione un tipo</option>
+            <option value="Mantenimiento General">Mantenimiento General</option>
+            <option value="Limpieza Profunda">Limpieza Profunda</option>
+            <option value="Inspección General">Inspección General</option>
+            <option value="Reparación Urgente">Reparación Urgente</option>
+            <option value="Reparación Programada">Reparación Programada</option>
+            <option value="Revisión de Instalaciones">Revisión de Instalaciones</option>
+            <option value="Mantenimiento Preventivo">Mantenimiento Preventivo</option>
+            <option value="Reparación Correctiva">Reparación Correctiva</option>
+            <option value="Reemplazo de Componentes">Reemplazo de Componentes</option>
+            <option value="Mejora de Infraestructura">Mejora de Infraestructura</option>
+            <option value="Otro">Otro</option>
+        </select>
+    </div>
+
+    <!-- Tipo Específico -->
+    <div class="form-group">
+        <label for="tipoEspecifico">Tipo Específico:</label>
+        <select id="tipoEspecifico" name="tipoEspecifico">
+            <option value="">Seleccione un tipo específico</option>
+            <option value="limpieza_profunda">Limpieza Profunda</option>
+            <option value="inspeccion_electrica">Inspección Eléctrica</option>
+            <option value="revision_gas">Revisión de Gas</option>
+            <option value="mantencion_estufas">Mantención de Estufas</option>
+            <option value="mantencion_leneras">Mantención de Leñeras</option>
+            <option value="control_muebles">Control de Muebles</option>
+            <option value="control_utensilios">Control de Utensilios</option>
+            <option value="control_ropa_cama">Control de Ropa de Cama</option>
+            <option value="inspeccion_areas_comunes">Inspección de Áreas Comunes</option>
+            <option value="reparacion_electrodomesticos">Reparación de Electrodomésticos</option>
+            <option value="reparacion_muebles">Reparación de Muebles</option>
+            <option value="reparacion_utensilios">Reparación de Utensilios</option>
+            <option value="reparacion_infraestructura">Reparación de Infraestructura</option>
+            <option value="reparacion_implementos_recreativos">Reparación de Implementos Recreativos</option>
+            <option value="otro">Otro</option>
+        </select>
+    </div>
+
+    <!-- Prioridad -->
+    <div class="form-group">
+        <label for="prioridad">Prioridad:</label>
+        <select id="prioridad" name="prioridad">
+            <option value="baja">Baja</option>
+            <option value="media" selected>Media</option>
+            <option value="alta">Alta</option>
+            <option value="urgente">Urgente</option>
+        </select>
+    </div>
+
+    <!-- Asignar Trabajador -->
+    <div class="form-group">
+        <label for="trabajadorId">Asignar Trabajador (Opcional):</label>
+        <select id="trabajadorId" name="trabajadorId">
+            <option value="">Sin asignar</option>
+            <% if (typeof trabajadores !== 'undefined' && trabajadores && trabajadores.length > 0) { %>
+                <% trabajadores.forEach(trabajador => { %>
+                    <option value="<%= trabajador.id %>"><%= trabajador.email || 'Trabajador #' + trabajador.id %></option>
+                <% }); %>
+            <% } %>
+        </select>
+        <small style="display: block; margin-top: 0.25rem; color: #666;">Si asignas un trabajador, se creará automáticamente una tarea para él</small>
+    </div>
+
+    <!-- Personal Externo (solo para cabañas) -->
+    <div id="personalExternoSection" style="display: none;">
+        <div class="form-group" style="display: flex; align-items: center; gap: 1rem;">
+            <label style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="requierePersonalExterno" name="requierePersonalExterno" value="on" onchange="togglePersonalExterno()">
+                Requiere Personal Externo
+            </label>
+            <div id="personalExternoGroup" style="display: none; flex: 1;">
+                <input type="text" id="personalExterno" name="personalExterno" placeholder="Ej: Empresa XYZ, Técnico Juan Pérez" style="width: 100%;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Checklist de Tareas Específicas (solo para cabañas) -->
+    <div id="checklistCabana" style="display: none;">
+        <h3>Checklist de Tareas Específicas</h3>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" name="inspeccionElectrica" value="on">
+                    Inspección Eléctrica
+                </label>
+            </div>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" name="revisionGas" value="on">
+                    Revisión de Gas
+                </label>
+            </div>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" name="mantencionEstufas" value="on">
+                    Mantención de Estufas
+                </label>
+            </div>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" name="mantencionLeneras" value="on">
+                    Mantención de Leñeras
+                </label>
+            </div>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" name="controlMuebles" value="on">
+                    Control de Muebles
+                </label>
+            </div>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" name="controlUtensilios" value="on">
+                    Control de Utensilios
+                </label>
+            </div>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" name="controlRopaCama" value="on">
+                    Control de Ropa de Cama
+                </label>
+            </div>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" name="inspeccionAreasComunes" value="on">
+                    Inspección de Áreas Comunes
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Descripción -->
+    <div class="form-group">
+        <label for="descripcion">Descripción Detallada:</label>
+        <textarea id="descripcion" name="descripcion" rows="4" placeholder="Detalles adicionales del mantenimiento"></textarea>
     </div>
 
     <button type="submit" class="btn btn-primary">Crear Mantenimiento</button>
     <a href="/mantenimientos" class="btn btn-secondary">Cancelar</a>
 </form>
 
-<%- include('../partials/footer') %>
+<script>
+function toggleObjectSelection() {
+    const tipoObjeto = document.getElementById('tipoObjeto').value;
+    const cabanaGroup = document.getElementById('cabanaGroup');
+    const implementoGroup = document.getElementById('implementoGroup');
+    const checklistCabana = document.getElementById('checklistCabana');
+    const cabanaSelect = document.getElementById('cabanaId');
+    const implementoSelect = document.getElementById('implementoId');
 
+    const personalExternoSection = document.getElementById('personalExternoSection');
+
+    if (tipoObjeto === 'cabana') {
+        cabanaGroup.style.display = 'block';
+        implementoGroup.style.display = 'none';
+        checklistCabana.style.display = 'block';
+        personalExternoSection.style.display = 'block';
+        cabanaSelect.required = true;
+        implementoSelect.required = false;
+        implementoSelect.value = '';
+    } else if (tipoObjeto === 'implemento') {
+        cabanaGroup.style.display = 'none';
+        implementoGroup.style.display = 'block';
+        checklistCabana.style.display = 'none';
+        personalExternoSection.style.display = 'block';
+        cabanaSelect.required = false;
+        implementoSelect.required = true;
+        cabanaSelect.value = '';
+    } else {
+        cabanaGroup.style.display = 'none';
+        implementoGroup.style.display = 'none';
+        checklistCabana.style.display = 'none';
+        personalExternoSection.style.display = 'none';
+        cabanaSelect.required = false;
+        implementoSelect.required = false;
+    }
+}
+
+function togglePersonalExterno() {
+    const requierePersonalExterno = document.getElementById('requierePersonalExterno').checked;
+    const personalExternoGroup = document.getElementById('personalExternoGroup');
+    const personalExternoInput = document.getElementById('personalExterno');
+
+    if (requierePersonalExterno) {
+        personalExternoGroup.style.display = 'block';
+        personalExternoInput.required = true;
+    } else {
+        personalExternoGroup.style.display = 'none';
+        personalExternoInput.required = false;
+        personalExternoInput.value = '';
+    }
+}
+
+function mostrarLeyendaCategoria() {
+    const categoria = document.getElementById('categoria').value;
+    const leyendaPreventivo = document.getElementById('leyendaCategoria');
+    const leyendaCorrectivo = document.getElementById('leyendaCorrectivo');
+
+    if (categoria === 'preventivo') {
+        leyendaPreventivo.style.display = 'block';
+        leyendaCorrectivo.style.display = 'none';
+    } else if (categoria === 'correctivo') {
+        leyendaPreventivo.style.display = 'none';
+        leyendaCorrectivo.style.display = 'block';
+    } else {
+        leyendaPreventivo.style.display = 'none';
+        leyendaCorrectivo.style.display = 'none';
+    }
+}
+</script>
+
+<%- include('../partials/footer') %>

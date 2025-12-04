@@ -235,6 +235,21 @@ body {
     color: #000;
 }
 
+.badge-info {
+    background-color: var(--info-color);
+    color: white;
+}
+
+.badge-danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.badge-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
 /* Dashboard */
 .dashboard {
     padding: 2rem 0;

@@ -2,16 +2,22 @@
 <%- include('../partials/navbar') %>
 
 <h1>Mantenimientos</h1>
-<a href="/mantenimientos/crear" class="btn btn-primary">Nuevo Mantenimiento</a>
+<% if (typeof req !== 'undefined' && req.session.user && req.session.user.role === 'admin') { %>
+    <a href="/mantenimientos/crear" class="btn btn-primary">Nuevo Mantenimiento</a>
+<% } %>
 
 <div class="table-container">
     <table>
         <thead>
             <tr>
-                <th>Cabaña</th>
+                <th>Objeto</th>
+                <th>Categoría</th>
                 <th>Fecha Inicio</th>
                 <th>Fecha Fin</th>
                 <th>Tipo</th>
+                <th>Tipo Específico</th>
+                <th>Prioridad</th>
+                <th>Trabajador</th>
                 <th>Estado</th>
                 <th>Acciones</th>
             </tr>
@@ -19,16 +25,83 @@
         <tbody>
             <% mantenimientos.forEach(mant => { %>
             <tr>
-                <td><%= mant.cabana.nombre %></td>
+                <td>
+                    <% if (mant.cabana) { %>
+                        <a href="/mantenimientos/cabana/<%= mant.cabana.id %>/historial"><%= mant.cabana.nombre %></a>
+                    <% } else if (mant.implemento) { %>
+                        <a href="/mantenimientos/implemento/<%= mant.implemento.id %>/historial"><%= mant.implemento.nombre %></a>
+                    <% } else { %>
+                        N/A
+                    <% } %>
+                </td>
+                <td>
+                    <% if (mant.categoria) { %>
+                        <span class="badge badge-<%= mant.categoria === 'preventivo' ? 'info' : 'warning' %>">
+                            <%= mant.categoria === 'preventivo' ? 'Preventivo' : 'Correctivo' %>
+                        </span>
+                    <% } else { %>
+                        <span class="badge badge-secondary">N/A</span>
+                    <% } %>
+                </td>
                 <td><%= new Date(mant.fechaInicio).toLocaleDateString() %></td>
                 <td><%= new Date(mant.fechaFin).toLocaleDateString() %></td>
                 <td><%= mant.tipo %></td>
+                <td>
+                    <%
+                        const tiposEspecificos = {
+                            'limpieza_profunda': 'Limpieza Profunda',
+                            'inspeccion_electrica': 'Inspección Eléctrica',
+                            'revision_gas': 'Revisión de Gas',
+                            'mantencion_estufas': 'Mantención Estufas',
+                            'mantencion_leneras': 'Mantención Leñeras',
+                            'control_muebles': 'Control Muebles',
+                            'control_utensilios': 'Control Utensilios',
+                            'control_ropa_cama': 'Control Ropa Cama',
+                            'inspeccion_areas_comunes': 'Áreas Comunes',
+                            'reparacion_electrodomesticos': 'Rep. Electrodomésticos',
+                            'reparacion_muebles': 'Rep. Muebles',
+                            'reparacion_utensilios': 'Rep. Utensilios',
+                            'reparacion_infraestructura': 'Rep. Infraestructura',
+                            'reparacion_implementos_recreativos': 'Rep. Implementos',
+                            'otro': 'Otro'
+                        };
+                        const tipoEspecificoLabel = mant.tipoEspecifico ? tiposEspecificos[mant.tipoEspecifico] || mant.tipoEspecifico : '-';
+                    %>
+                    <%= tipoEspecificoLabel %>
+                </td>
+                <td>
+                    <% if (mant.prioridad) { %>
+                        <span class="badge badge-<%=
+                            mant.prioridad === 'urgente' ? 'danger' :
+                            mant.prioridad === 'alta' ? 'warning' :
+                            mant.prioridad === 'media' ? 'info' : 'secondary'
+                        %>">
+                            <%= mant.prioridad %>
+                        </span>
+                    <% } else { %>
+                        <span class="badge badge-secondary">media</span>
+                    <% } %>
+                </td>
+                <td>
+                    <% if (mant.trabajador) { %>
+                        <%= mant.trabajador.email || 'Trabajador #' + mant.trabajador.id %>
+                    <% } else if (mant.requierePersonalExterno && mant.personalExterno) { %>
+                        <span style="color: #666; font-style: italic;">Ext: <%= mant.personalExterno %></span>
+                    <% } else { %>
+                        <span style="color: #999;">Sin asignar</span>
+                    <% } %>
+                </td>
                 <td><span class="badge badge-<%= mant.estado %>"><%= mant.estado %></span></td>
                 <td>
-                    <% if (mant.estado !== 'completado' && mant.estado !== 'cancelado') { %>
-                        <form method="POST" action="/mantenimientos/<%= mant.id %>/completar" style="display: inline;">
-                            <button type="submit" class="btn btn-success btn-sm">Completar</button>
-                        </form>
+                    <% if (typeof req !== 'undefined' && req.session.user && (req.session.user.role === 'admin' || req.session.user.role === 'encargado')) { %>
+                        <% if (!mant.trabajador && mant.estado !== 'completado' && mant.estado !== 'cancelado') { %>
+                            <button onclick="mostrarModalAsignar(<%= mant.id %>)" class="btn btn-warning btn-sm">Asignar Trabajador</button>
+                        <% } %>
+                    <% } %>
+                    <% if (mant.cabana) { %>
+                        <a href="/mantenimientos/cabana/<%= mant.cabana.id %>/historial" class="btn btn-info btn-sm">Historial</a>
+                    <% } else if (mant.implemento) { %>
+                        <a href="/mantenimientos/implemento/<%= mant.implemento.id %>/historial" class="btn btn-info btn-sm">Historial</a>
                     <% } %>
                 </td>
             </tr>
@@ -37,5 +110,139 @@
     </table>
 </div>
 
-<%- include('../partials/footer') %>
+<!-- Modal para asignar trabajador -->
+<div id="modalAsignar" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 8px; max-width: 500px; width: 90%;">
+        <h2>Asignar Trabajador</h2>
+        <form id="formAsignar" method="POST">
+            <div class="form-group">
+                <label for="trabajadorSelect">Seleccione un trabajador:</label>
+                <select id="trabajadorSelect" name="trabajadorId" class="form-control" required>
+                    <option value="">Seleccione un trabajador</option>
+                    <!-- Se llenará con JavaScript -->
+                </select>
+            </div>
+            <div style="margin-top: 1rem; display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" onclick="cerrarModalAsignar()" class="btn btn-secondary">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Asignar</button>
+            </div>
+        </form>
+    </div>
+</div>
 
+<script>
+// Trabajadores disponibles pasados desde el servidor
+const trabajadoresDisponibles = [];
+<% if (typeof trabajadores !== 'undefined' && trabajadores && Array.isArray(trabajadores)) { %>
+    <% trabajadores.forEach(trabajador => { %>
+        <% if (trabajador && trabajador.id) { %>
+            trabajadoresDisponibles.push({
+                id: <%= trabajador.id %>,
+                email: '<%= (trabajador.email || '').replace(/'/g, "\\'") %>'
+            });
+        <% } %>
+    <% }); %>
+<% } %>
+
+console.log('Trabajadores disponibles:', trabajadoresDisponibles);
+
+function mostrarModalAsignar(mantenimientoId) {
+    try {
+        const modal = document.getElementById('modalAsignar');
+        const form = document.getElementById('formAsignar');
+        const select = document.getElementById('trabajadorSelect');
+
+        if (!modal || !form || !select) {
+            console.error('Elementos del modal no encontrados');
+            alert('Error: No se pudo abrir el formulario');
+            return;
+        }
+
+        form.action = `/mantenimientos/${mantenimientoId}/asignar-trabajador`;
+        select.innerHTML = '<option value="">Seleccione un trabajador</option>';
+
+        if (trabajadoresDisponibles && Array.isArray(trabajadoresDisponibles) && trabajadoresDisponibles.length > 0) {
+            trabajadoresDisponibles.forEach(trabajador => {
+                if (trabajador && trabajador.id) {
+                    const option = document.createElement('option');
+                    option.value = trabajador.id;
+                    option.textContent = trabajador.email || 'Trabajador #' + trabajador.id;
+                    select.appendChild(option);
+                }
+            });
+
+            if (select.options.length === 1) {
+                select.innerHTML += '<option value="" disabled>No hay trabajadores disponibles</option>';
+            }
+        } else {
+            select.innerHTML += '<option value="" disabled>No hay trabajadores disponibles</option>';
+            console.warn('No hay trabajadores disponibles para asignar');
+        }
+
+        modal.style.display = 'block';
+    } catch (error) {
+        console.error('Error al mostrar modal:', error);
+        alert('Error al abrir el formulario de asignación: ' + error.message);
+    }
+}
+
+function cerrarModalAsignar() {
+    try {
+        document.getElementById('modalAsignar').style.display = 'none';
+        document.getElementById('formAsignar').reset();
+    } catch (error) {
+        console.error('Error al cerrar modal:', error);
+    }
+}
+
+// Cerrar modal al hacer clic fuera
+try {
+    const modal = document.getElementById('modalAsignar');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                cerrarModalAsignar();
+            }
+        });
+    }
+} catch (error) {
+    console.error('Error al configurar evento del modal:', error);
+}
+
+// Manejar envío del formulario
+try {
+    const form = document.getElementById('formAsignar');
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            try {
+                const formData = new FormData(this);
+                const response = await fetch(this.action, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(formData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert('Trabajador asignado correctamente');
+                    location.reload();
+                } else {
+                    alert('Error: ' + (result.error || 'No se pudo asignar el trabajador'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al asignar trabajador. Por favor intenta nuevamente.');
+            }
+        });
+    }
+} catch (error) {
+    console.error('Error al configurar formulario:', error);
+}
+</script>
+
+<%- include('../partials/footer') %>

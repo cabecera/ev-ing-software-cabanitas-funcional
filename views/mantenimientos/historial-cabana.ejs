@@ -1,0 +1,147 @@
+<%- include('../partials/header', { title: `Historial de Mantenimientos - ${cabana.nombre}` }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Historial de Mantenimientos</h1>
+<h2>Cabaña: <%= cabana.nombre %></h2>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha Inicio</th>
+                <th>Fecha Fin</th>
+                <th>Categoría</th>
+                <th>Tipo</th>
+                <th>Tipo Específico</th>
+                <th>Prioridad</th>
+                <th>Estado</th>
+                <th>Trabajador</th>
+                <th>Descripción</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (mantenimientos && mantenimientos.length > 0) { %>
+                <% mantenimientos.forEach(mant => { %>
+                <tr>
+                    <td><%= new Date(mant.fechaInicio).toLocaleDateString() %></td>
+                    <td><%= new Date(mant.fechaFin).toLocaleDateString() %></td>
+                    <td>
+                        <span class="badge badge-<%= mant.categoria === 'preventivo' ? 'info' : 'warning' %>">
+                            <%= mant.categoria === 'preventivo' ? 'Preventivo' : 'Correctivo' %>
+                        </span>
+                    </td>
+                    <td><%= mant.tipo %></td>
+                    <td>
+                        <%
+                            const tiposEspecificos = {
+                                'limpieza_profunda': 'Limpieza Profunda',
+                                'inspeccion_electrica': 'Inspección Eléctrica',
+                                'revision_gas': 'Revisión de Gas',
+                                'mantencion_estufas': 'Mantención Estufas',
+                                'mantencion_leneras': 'Mantención Leñeras',
+                                'control_muebles': 'Control Muebles',
+                                'control_utensilios': 'Control Utensilios',
+                                'control_ropa_cama': 'Control Ropa Cama',
+                                'inspeccion_areas_comunes': 'Áreas Comunes',
+                                'reparacion_electrodomesticos': 'Rep. Electrodomésticos',
+                                'reparacion_muebles': 'Rep. Muebles',
+                                'reparacion_utensilios': 'Rep. Utensilios',
+                                'reparacion_infraestructura': 'Rep. Infraestructura',
+                                'reparacion_implementos_recreativos': 'Rep. Implementos',
+                                'otro': 'Otro'
+                            };
+                            const tipoEspecificoLabel = mant.tipoEspecifico ? tiposEspecificos[mant.tipoEspecifico] || mant.tipoEspecifico : '-';
+                        %>
+                        <%= tipoEspecificoLabel %>
+                    </td>
+                    <td>
+                        <span class="badge badge-<%=
+                            mant.prioridad === 'urgente' ? 'danger' :
+                            mant.prioridad === 'alta' ? 'warning' :
+                            mant.prioridad === 'media' ? 'info' : 'secondary'
+                        %>">
+                            <%= mant.prioridad || 'media' %>
+                        </span>
+                    </td>
+                    <td><span class="badge badge-<%= mant.estado %>"><%= mant.estado %></span></td>
+                    <td>
+                        <% if (mant.trabajador) { %>
+                            <%= mant.trabajador.email || 'Trabajador #' + mant.trabajador.id %>
+                        <% } else if (mant.requierePersonalExterno && mant.personalExterno) { %>
+                            Ext: <%= mant.personalExterno %>
+                        <% } else { %>
+                            -
+                        <% } %>
+                    </td>
+                    <td>
+                        <%= mant.descripcion || '-' %>
+                        <% if (mant.tareas && mant.tareas.length > 0) { %>
+                            <% const tareaCompletada = mant.tareas.find(t => t.estado === 'completada'); %>
+                            <% if (tareaCompletada && tareaCompletada.observaciones) { %>
+                                <br><strong>Observaciones del trabajador:</strong> <%= tareaCompletada.observaciones %>
+                            <% } %>
+                            <% if (tareaCompletada && tareaCompletada.reporteDanios) { %>
+                                <br><strong>Reporte de daños:</strong> <%= tareaCompletada.reporteDanios %>
+                            <% } %>
+                        <% } %>
+                    </td>
+                </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="8">No hay mantenimientos registrados para esta cabaña.</td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+</div>
+
+<div style="margin-top: 2rem;">
+    <h3>Detalles de Inspecciones Realizadas</h3>
+    <%
+        const mantenimientosConDetalles = mantenimientos.filter(m =>
+            m.inspeccionElectrica || m.revisionGas || m.mantencionEstufas ||
+            m.mantencionLeneras || m.controlMuebles || m.controlUtensilios ||
+            m.controlRopaCama || m.inspeccionAreasComunes
+        );
+    %>
+    <% if (mantenimientosConDetalles.length > 0) { %>
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Inspección Eléctrica</th>
+                    <th>Revisión Gas</th>
+                    <th>Mant. Estufas</th>
+                    <th>Mant. Leñeras</th>
+                    <th>Control Muebles</th>
+                    <th>Control Utensilios</th>
+                    <th>Control Ropa Cama</th>
+                    <th>Áreas Comunes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% mantenimientosConDetalles.forEach(mant => { %>
+                <tr>
+                    <td><%= new Date(mant.fechaInicio).toLocaleDateString() %></td>
+                    <td><%= mant.inspeccionElectrica ? 'Sí' : '-' %></td>
+                    <td><%= mant.revisionGas ? 'Sí' : '-' %></td>
+                    <td><%= mant.mantencionEstufas ? 'Sí' : '-' %></td>
+                    <td><%= mant.mantencionLeneras ? 'Sí' : '-' %></td>
+                    <td><%= mant.controlMuebles ? 'Sí' : '-' %></td>
+                    <td><%= mant.controlUtensilios ? 'Sí' : '-' %></td>
+                    <td><%= mant.controlRopaCama ? 'Sí' : '-' %></td>
+                    <td><%= mant.inspeccionAreasComunes ? 'Sí' : '-' %></td>
+                </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    <% } else { %>
+        <p>No hay inspecciones detalladas registradas.</p>
+    <% } %>
+</div>
+
+<a href="/mantenimientos" class="btn btn-secondary">Volver a Mantenimientos</a>
+
+<%- include('../partials/footer') %>
+

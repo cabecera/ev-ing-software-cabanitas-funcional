@@ -68,6 +68,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: true,
       field: 'reporteDanios'
+    },
+    mantenimientoId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'mantenimientos',
+        key: 'id'
+      }
     }
   }, {
     tableName: 'tarea_trabajadores',
@@ -79,6 +87,7 @@ module.exports = (sequelize, DataTypes) => {
     TareaTrabajador.belongsTo(models.User, { foreignKey: 'asignadoPor', as: 'asignador' });
     TareaTrabajador.belongsTo(models.Cabana, { foreignKey: 'cabanaId', as: 'cabana' });
     TareaTrabajador.belongsTo(models.PreparacionCabana, { foreignKey: 'preparacionId', as: 'preparacion' });
+    TareaTrabajador.belongsTo(models.Mantenimiento, { foreignKey: 'mantenimientoId', as: 'mantenimiento' });
   };
 
   return TareaTrabajador;

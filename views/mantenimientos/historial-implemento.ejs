@@ -1,0 +1,108 @@
+<%- include('../partials/header', { title: `Historial de Mantenimientos - ${implemento.nombre}` }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Historial de Mantenimientos</h1>
+<h2>Implemento: <%= implemento.nombre %></h2>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha Inicio</th>
+                <th>Fecha Fin</th>
+                <th>Categoría</th>
+                <th>Tipo</th>
+                <th>Tipo Específico</th>
+                <th>Prioridad</th>
+                <th>Estado</th>
+                <th>Trabajador</th>
+                <th>Descripción</th>
+                <th>Personal Externo</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (mantenimientos && mantenimientos.length > 0) { %>
+                <% mantenimientos.forEach(mant => { %>
+                <tr>
+                    <td><%= new Date(mant.fechaInicio).toLocaleDateString() %></td>
+                    <td><%= new Date(mant.fechaFin).toLocaleDateString() %></td>
+                    <td>
+                        <span class="badge badge-<%= mant.categoria === 'preventivo' ? 'info' : 'warning' %>">
+                            <%= mant.categoria === 'preventivo' ? 'Preventivo' : 'Correctivo' %>
+                        </span>
+                    </td>
+                    <td><%= mant.tipo %></td>
+                    <td>
+                        <%
+                            const tiposEspecificos = {
+                                'limpieza_profunda': 'Limpieza Profunda',
+                                'inspeccion_electrica': 'Inspección Eléctrica',
+                                'revision_gas': 'Revisión de Gas',
+                                'mantencion_estufas': 'Mantención Estufas',
+                                'mantencion_leneras': 'Mantención Leñeras',
+                                'control_muebles': 'Control Muebles',
+                                'control_utensilios': 'Control Utensilios',
+                                'control_ropa_cama': 'Control Ropa Cama',
+                                'inspeccion_areas_comunes': 'Áreas Comunes',
+                                'reparacion_electrodomesticos': 'Rep. Electrodomésticos',
+                                'reparacion_muebles': 'Rep. Muebles',
+                                'reparacion_utensilios': 'Rep. Utensilios',
+                                'reparacion_infraestructura': 'Rep. Infraestructura',
+                                'reparacion_implementos_recreativos': 'Rep. Implementos',
+                                'otro': 'Otro'
+                            };
+                            const tipoEspecificoLabel = mant.tipoEspecifico ? tiposEspecificos[mant.tipoEspecifico] || mant.tipoEspecifico : '-';
+                        %>
+                        <%= tipoEspecificoLabel %>
+                    </td>
+                    <td>
+                        <span class="badge badge-<%=
+                            mant.prioridad === 'urgente' ? 'danger' :
+                            mant.prioridad === 'alta' ? 'warning' :
+                            mant.prioridad === 'media' ? 'info' : 'secondary'
+                        %>">
+                            <%= mant.prioridad || 'media' %>
+                        </span>
+                    </td>
+                    <td><span class="badge badge-<%= mant.estado %>"><%= mant.estado %></span></td>
+                    <td>
+                        <% if (mant.trabajador) { %>
+                            <%= mant.trabajador.email || 'Trabajador #' + mant.trabajador.id %>
+                        <% } else { %>
+                            -
+                        <% } %>
+                    </td>
+                    <td>
+                        <%= mant.descripcion || '-' %>
+                        <% if (mant.tareas && mant.tareas.length > 0) { %>
+                            <% const tareaCompletada = mant.tareas.find(t => t.estado === 'completada'); %>
+                            <% if (tareaCompletada && tareaCompletada.observaciones) { %>
+                                <br><strong>Observaciones del trabajador:</strong> <%= tareaCompletada.observaciones %>
+                            <% } %>
+                            <% if (tareaCompletada && tareaCompletada.reporteDanios) { %>
+                                <br><strong>Reporte de daños:</strong> <%= tareaCompletada.reporteDanios %>
+                            <% } %>
+                        <% } %>
+                    </td>
+                    <td>
+                        <% if (mant.requierePersonalExterno && mant.personalExterno) { %>
+                            <%= mant.personalExterno %>
+                        <% } else { %>
+                            -
+                        <% } %>
+                    </td>
+                </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="9">No hay mantenimientos registrados para este implemento.</td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+</div>
+
+<a href="/mantenimientos" class="btn btn-secondary">Volver a Mantenimientos</a>
+
+<%- include('../partials/footer') %>
+
