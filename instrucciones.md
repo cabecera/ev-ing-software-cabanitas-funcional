@@ -1,14 +1,36 @@
 ## Usuarios
+admin@cabanitas.com
+admin123
+
+
 encargado@cabanitas.com
 encargado123
+
 
 cliente@example.com
 cliente123
 
-admin@cabanitas.com
-admin123
+
+trabajador1@cabanitas.com
+trabajadro123
+
+
+trabajador2@cabanitas.com
+trabajador123
+
+
+carlos2@test.cl
+carlos123
+
+
+test@test.cl
+test
 
 ## Comandos principales
+
+### Resetear datos
+
+npm run reset
 
 ### Configuración inicial
 
@@ -25,10 +47,6 @@ SELECT * FROM users;
 SELECT * FROM reservas;
 EXIT;
 
-
-### Resetear datos
-
-npm run reset
 
 
 ## Configurar el archivo .env
