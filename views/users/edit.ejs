@@ -1,0 +1,85 @@
+<%- include('../partials/header', { title: 'Editar Usuario' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Editar Usuario</h1>
+
+<% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-error"><%= error %></div>
+<% } %>
+
+<form method="POST" action="/users/<%= user.id %>/editar" class="form">
+    <div class="form-group">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" value="<%= user.email %>" required>
+    </div>
+
+    <div class="form-group">
+        <label for="password">Contraseña:</label>
+        <input type="password" id="password" name="password" placeholder="Dejar vacío para no cambiar">
+        <small style="color: #666;">Deja este campo vacío si no quieres cambiar la contraseña</small>
+    </div>
+
+    <div class="form-group">
+        <label for="role">Rol:</label>
+        <select id="role" name="role" required>
+            <option value="">Seleccione un rol</option>
+            <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
+            <option value="encargado" <%= user.role === 'encargado' ? 'selected' : '' %>>Encargado</option>
+            <option value="cliente" <%= user.role === 'cliente' ? 'selected' : '' %>>Cliente</option>
+            <option value="trabajador" <%= user.role === 'trabajador' ? 'selected' : '' %>>Trabajador</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="activo">Estado:</label>
+        <select id="activo" name="activo" required>
+            <option value="true" <%= user.activo ? 'selected' : '' %>>Activo</option>
+            <option value="false" <%= !user.activo ? 'selected' : '' %>>Inactivo</option>
+        </select>
+    </div>
+
+    <div id="clienteFields" style="display: <%= user.role === 'cliente' ? 'block' : 'none' %>;">
+        <h3>Datos del Cliente</h3>
+        <div class="form-group">
+            <label for="nombre">Nombre:</label>
+            <input type="text" id="nombre" name="nombre" value="<%= user.cliente ? user.cliente.nombre : '' %>">
+        </div>
+
+        <div class="form-group">
+            <label for="apellido">Apellido:</label>
+            <input type="text" id="apellido" name="apellido" value="<%= user.cliente ? user.cliente.apellido : '' %>">
+        </div>
+
+        <div class="form-group">
+            <label for="telefono">Teléfono:</label>
+            <input type="text" id="telefono" name="telefono" value="<%= user.cliente && user.cliente.telefono ? user.cliente.telefono : '' %>">
+        </div>
+
+        <div class="form-group">
+            <label for="direccion">Dirección:</label>
+            <input type="text" id="direccion" name="direccion" value="<%= user.cliente && user.cliente.direccion ? user.cliente.direccion : '' %>">
+        </div>
+
+        <div class="form-group">
+            <label for="dni">DNI:</label>
+            <input type="text" id="dni" name="dni" value="<%= user.cliente && user.cliente.dni ? user.cliente.dni : '' %>">
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+    <a href="/users" class="btn btn-secondary">Cancelar</a>
+</form>
+
+<script>
+    document.getElementById('role').addEventListener('change', function() {
+        const clienteFields = document.getElementById('clienteFields');
+        if (this.value === 'cliente') {
+            clienteFields.style.display = 'block';
+        } else {
+            clienteFields.style.display = 'none';
+        }
+    });
+</script>
+
+<%- include('../partials/footer') %>
+

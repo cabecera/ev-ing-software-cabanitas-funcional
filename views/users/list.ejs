@@ -4,6 +4,24 @@
 <h1>Gestión de Usuarios</h1>
 <a href="/users/crear" class="btn btn-primary">Nuevo Usuario</a>
 
+<% if (typeof req !== 'undefined' && req.query && req.query.updated === 'true') { %>
+    <div class="alert alert-success" style="margin-top: 1rem;">
+        Usuario actualizado correctamente.
+    </div>
+<% } %>
+
+<% if (typeof req !== 'undefined' && req.query && req.query.deleted === 'true') { %>
+    <div class="alert alert-success" style="margin-top: 1rem;">
+        Usuario eliminado correctamente.
+    </div>
+<% } %>
+
+<% if (typeof req !== 'undefined' && req.query && req.query.deactivated === 'true') { %>
+    <div class="alert alert-warning" style="margin-top: 1rem;">
+        El usuario no pudo ser eliminado debido a registros asociados. Se desactivó en su lugar.
+    </div>
+<% } %>
+
 <div class="table-container">
     <table>
         <thead>
@@ -39,9 +57,13 @@
                 <td><%= new Date(user.createdAt).toLocaleDateString() %></td>
                 <td>
                     <% if (typeof req !== 'undefined' && req.session && req.session.user && user.id !== req.session.user.id) { %>
-                        <form method="POST" action="/users/<%= user.id %>/toggle-activo" style="display: inline;">
-                            <button type="submit" class="btn btn-sm <%= user.activo ? 'btn-danger' : 'btn-success' %>">
-                                <%= user.activo ? 'Desactivar' : 'Activar' %>
+                        <a href="/users/<%= user.id %>/editar" class="btn btn-sm btn-primary" style="margin-right: 5px;">
+                            Modificar
+                        </a>
+                        <form method="POST" action="/users/<%= user.id %>/eliminar" style="display: inline;"
+                              onsubmit="return confirm('¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.');">
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                Eliminar
                             </button>
                         </form>
                     <% } else { %>
