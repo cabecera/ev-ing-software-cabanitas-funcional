@@ -12,3 +12,6 @@ router.post('/:id/resolver', requireAuth, requireAdmin, incidenteController.reso
 
 module.exports = router;
 
+
+
+

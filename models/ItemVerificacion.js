@@ -50,3 +50,6 @@ module.exports = (sequelize, DataTypes) => {
   return ItemVerificacion;
 };
 
+
+
+

@@ -29,3 +29,6 @@ router.get('/:id', requireAuth, requireAdminOrEncargado, async (req, res) => {
 
 module.exports = router;
 
+
+
+

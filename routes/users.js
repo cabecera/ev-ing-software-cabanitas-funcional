@@ -10,3 +10,6 @@ router.post('/:id/toggle-activo', requireAuth, requireAdmin, userController.togg
 
 module.exports = router;
 
+
+
+

@@ -11,3 +11,6 @@ router.post('/tarea/:id/reportar-dano', requireAuth, requireRole('trabajador'), 
 
 module.exports = router;
 
+
+
+

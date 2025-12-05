@@ -57,3 +57,6 @@ module.exports = (sequelize, DataTypes) => {
   return EntregaCabana;
 };
 
+
+
+

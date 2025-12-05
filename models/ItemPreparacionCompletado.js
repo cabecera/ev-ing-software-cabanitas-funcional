@@ -46,3 +46,6 @@ module.exports = (sequelize, DataTypes) => {
   return ItemPreparacionCompletado;
 };
 
+
+
+

@@ -11,3 +11,6 @@ MODIFY COLUMN reservaId INT NULL DEFAULT NULL;
 -- Verificar que el cambio se aplicó
 DESCRIBE pagos;
 
+
+
+

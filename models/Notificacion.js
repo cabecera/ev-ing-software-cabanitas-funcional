@@ -45,3 +45,6 @@ module.exports = (sequelize, DataTypes) => {
   return Notificacion;
 };
 
+
+
+

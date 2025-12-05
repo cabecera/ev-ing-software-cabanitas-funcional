@@ -305,3 +305,6 @@ El proyecto implementa un **Sistema de Gestión de Cabañas** completo que:
 
 **CONCLUSIÓN:** El proyecto cumple con **excelencia** todos los criterios de la rúbrica y merece la **puntuación máxima (100 puntos)**.
 
+
+
+

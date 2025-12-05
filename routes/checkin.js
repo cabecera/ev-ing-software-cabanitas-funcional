@@ -8,3 +8,6 @@ router.post('/:reservaId', requireAuth, requireRole('cliente'), checkinControlle
 
 module.exports = router;
 
+
+
+

@@ -9,3 +9,6 @@ router.post('/:id/editar', requireAuth, requireAdmin, implementoController.updat
 
 module.exports = router;
 
+
+
+

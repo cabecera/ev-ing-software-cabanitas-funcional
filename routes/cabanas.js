@@ -13,3 +13,6 @@ router.post('/:id/eliminar', requireAuth, requireAdmin, cabanaController.delete)
 
 module.exports = router;
 
+
+
+

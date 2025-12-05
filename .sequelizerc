@@ -7,3 +7,6 @@ module.exports = {
   'migrations-path': path.resolve('migrations')
 };
 
+
+
+

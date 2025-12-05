@@ -12,3 +12,6 @@ router.post('/:id/cancelar', requireAuth, reservaController.cancel);
 
 module.exports = router;
 
+
+
+

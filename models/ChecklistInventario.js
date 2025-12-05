@@ -30,3 +30,6 @@ module.exports = (sequelize, DataTypes) => {
   return ChecklistInventario;
 };
 
+
+
+
