@@ -17,9 +17,10 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     estado: {
-      type: DataTypes.ENUM('disponible', 'reservada', 'mantenimiento'),
+      type: DataTypes.ENUM('disponible', 'mantenimiento'),
       allowNull: false,
-      defaultValue: 'disponible'
+      defaultValue: 'disponible',
+      comment: 'Estado físico de la cabaña. "disponible" = lista para reservar, "mantenimiento" = en reparación. La disponibilidad por fechas se calcula dinámicamente según reservas activas.'
     },
     precioNoche: {
       type: DataTypes.DECIMAL(10, 2),

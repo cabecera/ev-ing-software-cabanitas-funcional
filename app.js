@@ -203,18 +203,59 @@ async function startServer() {
     }
 
     // Iniciar servidor HTTP
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Servidor corriendo en http://localhost:${PORT}`);
       console.log('NOTA: El servidor está configurado para manejar errores sin caerse.');
     });
+
+    // Manejar errores del servidor (como puerto en uso)
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error('\nERROR: El puerto', PORT, 'ya está en uso.');
+        console.error('\nSoluciones:');
+        console.error('  1. Detén el proceso que está usando el puerto', PORT);
+        console.error('  2. O cambia el puerto: PORT=3001 npm start');
+        console.error('\nPara detener el proceso en Windows:');
+        console.error('  - Abre el Administrador de Tareas (Ctrl+Shift+Esc)');
+        console.error('  - Busca "node.exe" y termínalo');
+        console.error('  - O ejecuta en PowerShell:');
+        console.error('    netstat -ano | findstr :' + PORT);
+        console.error('    taskkill /PID <PID_NUMBER> /F');
+        process.exit(1);
+      } else {
+        console.error('Error del servidor:', error);
+        throw error;
+      }
+    });
   } catch (error) {
     console.error('Error crítico al iniciar el servidor:', error);
+
+    // Detectar si el error es por puerto en uso
+    if (error.code === 'EADDRINUSE') {
+      console.error('\nERROR: El puerto', PORT, 'ya está en uso.');
+      console.error('Solución:');
+      console.error('  1. Detén el proceso que está usando el puerto', PORT);
+      console.error('  2. O cambia el puerto en la variable de entorno PORT');
+      console.error('\nPara detener el proceso en Windows:');
+      console.error('  - Abre el Administrador de Tareas (Ctrl+Shift+Esc)');
+      console.error('  - Busca "node.exe" y termínalo');
+      console.error('  - O ejecuta: netstat -ano | findstr :' + PORT);
+      console.error('  - Luego: taskkill /PID <PID_NUMBER> /F');
+      process.exit(1);
+    }
+
     // Intentar iniciar el servidor de todas formas para mostrar una página de error
     try {
       app.listen(PORT, () => {
         console.log(`Servidor corriendo en http://localhost:${PORT} (modo de recuperación)`);
       });
     } catch (startError) {
+      // Si el error de inicio también es por puerto en uso, mostrar mensaje claro
+      if (startError.code === 'EADDRINUSE') {
+        console.error('\nERROR: El puerto', PORT, 'ya está en uso.');
+        console.error('Por favor, detén el proceso que está usando el puerto', PORT);
+        process.exit(1);
+      }
       console.error('No se pudo iniciar el servidor:', startError);
       process.exit(1);
     }

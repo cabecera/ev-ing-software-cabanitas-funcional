@@ -44,7 +44,7 @@
                     <% } %>
                     <% if (reserva.estado === 'confirmada') { %>
                         <form method="POST" action="/encargado/preparacion/<%= reserva.id %>/iniciar" style="display: inline;">
-                            <button type="submit" class="btn btn-info btn-sm">Iniciar Prep.</button>
+                            <button type="submit" class="btn btn-primary btn-sm">Iniciar Prep.</button>
                         </form>
                     <% } %>
                     <a href="/observaciones/crear?reservaId=<%= reserva.id %>&clienteId=<%= reserva.cliente.id %>" class="btn btn-secondary btn-sm">Registrar Observación</a>

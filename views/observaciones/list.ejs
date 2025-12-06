@@ -35,6 +35,7 @@
                     <th>Severidad</th>
                     <th>Descripción</th>
                     <th>Registrado Por</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -42,9 +43,13 @@
                 <tr>
                     <td><%= new Date(obs.fechaObservacion).toLocaleDateString() %></td>
                     <td>
-                        <%= obs.cliente ? obs.cliente.nombre + ' ' + obs.cliente.apellido : 'N/A' %>
-                        <br>
-                        <a href="/observaciones/cliente/<%= obs.clienteId %>" class="btn-link">Ver todas</a>
+                        <% if (obs.cliente) { %>
+                            <%= obs.cliente.nombre + ' ' + obs.cliente.apellido %>
+                            <br>
+                            <a href="/observaciones/cliente/<%= obs.clienteId %>" class="btn-link">Ver todas</a>
+                        <% } else { %>
+                            N/A (Cliente eliminado)
+                        <% } %>
                     </td>
                     <td>
                         <% if (obs.reserva) { %>
@@ -67,6 +72,13 @@
                     </td>
                     <td><%= obs.descripcion.length > 100 ? obs.descripcion.substring(0, 100) + '...' : obs.descripcion %></td>
                     <td><%= obs.registrador ? obs.registrador.email : 'N/A' %></td>
+                    <td>
+                        <% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
+                            <form method="POST" action="/observaciones/eliminar/<%= obs.id %>" style="display: inline;" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta observación?');">
+                                <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                            </form>
+                        <% } %>
+                    </td>
                 </tr>
                 <% }); %>
             </tbody>

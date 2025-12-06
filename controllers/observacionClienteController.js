@@ -15,14 +15,20 @@ const observacionClienteController = {
       const observaciones = await ObservacionCliente.findAll({
         where,
         include: [
-          { model: Reserva, as: 'reserva', include: [{ model: Cabana, as: 'cabana' }] },
-          { model: Cliente, as: 'cliente' },
-          { model: User, as: 'registrador' }
+          { model: Reserva, as: 'reserva', required: false, include: [{ model: Cabana, as: 'cabana', required: false }] },
+          { model: Cliente, as: 'cliente', required: false },
+          { model: User, as: 'registrador', required: false }
         ],
         order: [['fechaObservacion', 'DESC'], ['createdAt', 'DESC']]
       });
 
-      res.render('observaciones/list', { observaciones });
+      // Filtrar observaciones huérfanas (sin cliente válido)
+      const observacionesValidas = observaciones.filter(obs => obs.cliente !== null);
+
+      res.render('observaciones/list', {
+        observaciones: observacionesValidas,
+        user: req.session.user
+      });
     } catch (error) {
       console.error('Error al listar observaciones:', error);
       res.status(500).render('error', {
@@ -152,15 +158,20 @@ const observacionClienteController = {
       const observaciones = await ObservacionCliente.findAll({
         where: { clienteId },
         include: [
-          { model: Reserva, as: 'reserva', include: [{ model: Cabana, as: 'cabana' }] },
-          { model: User, as: 'registrador' }
+          { model: Reserva, as: 'reserva', required: false, include: [{ model: Cabana, as: 'cabana', required: false }] },
+          { model: Cliente, as: 'cliente', required: false },
+          { model: User, as: 'registrador', required: false }
         ],
         order: [['fechaObservacion', 'DESC']]
       });
 
+      // Filtrar observaciones huérfanas (sin cliente válido)
+      const observacionesValidas = observaciones.filter(obs => obs.cliente !== null);
+
       res.render('observaciones/list', {
-        observaciones,
-        cliente
+        observaciones: observacionesValidas,
+        cliente,
+        user: req.session.user
       });
     } catch (error) {
       console.error('Error al listar observaciones del cliente:', error);
@@ -195,14 +206,19 @@ const observacionClienteController = {
       const observaciones = await ObservacionCliente.findAll({
         where: { reservaId },
         include: [
-          { model: User, as: 'registrador' }
+          { model: Cliente, as: 'cliente', required: false },
+          { model: User, as: 'registrador', required: false }
         ],
         order: [['fechaObservacion', 'DESC']]
       });
 
+      // Filtrar observaciones huérfanas (sin cliente válido)
+      const observacionesValidas = observaciones.filter(obs => obs.cliente !== null);
+
       res.render('observaciones/list', {
-        observaciones,
-        reserva
+        observaciones: observacionesValidas,
+        reserva,
+        user: req.session.user
       });
     } catch (error) {
       console.error('Error al listar observaciones de la reserva:', error);
@@ -258,6 +274,39 @@ const observacionClienteController = {
       res.status(500).json({
         error: 'Error al obtener reservas',
         message: error.message
+      });
+    }
+  },
+
+  // Eliminar observación
+  delete: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.session.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+
+      const observacion = await ObservacionCliente.findByPk(id);
+
+      if (!observacion) {
+        return res.status(404).json({ error: 'Observación no encontrada' });
+      }
+
+      // Solo admin puede eliminar observaciones
+      if (req.session.user.role !== 'admin') {
+        return res.status(403).json({ error: 'No tienes permiso para eliminar observaciones' });
+      }
+
+      await observacion.destroy();
+
+      res.redirect('/observaciones');
+    } catch (error) {
+      console.error('Error al eliminar observación:', error);
+      res.status(500).json({
+        error: 'Error al eliminar observación',
+        message: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }

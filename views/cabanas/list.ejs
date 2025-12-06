@@ -17,14 +17,22 @@
         <h3><%= cabana.nombre %></h3>
         <p><strong>Capacidad:</strong> <%= cabana.capacidad %> personas</p>
         <p><strong>Precio por noche:</strong> $<%= parseFloat(cabana.precioNoche).toLocaleString() %></p>
-        <p><strong>Estado:</strong>
-            <span class="badge badge-<%= cabana.estado %>"><%= cabana.estado %></span>
-        </p>
+        <% if (cabana.estado === 'mantenimiento') { %>
+            <p><strong>Estado:</strong>
+                <span class="badge badge-warning">En Mantenimiento</span>
+            </p>
+        <% } %>
         <p><%= cabana.descripcion %></p>
         <div class="card-actions">
             <a href="/cabanas/<%= cabana.id %>" class="btn btn-secondary">Ver Detalles</a>
-            <% if (typeof user !== 'undefined' && user && user.role === 'cliente' && cabana.estado === 'disponible') { %>
+            <% if (cabana.estado === 'mantenimiento') { %>
+                <span class="btn btn-secondary" style="opacity: 0.6; cursor: not-allowed;">No Disponible</span>
+            <% } else if (typeof user !== 'undefined' && user && user.role === 'cliente') { %>
                 <a href="/reservas/solicitar?cabanaId=<%= cabana.id %>" class="btn btn-primary">Reservar</a>
+            <% } else if (typeof user === 'undefined' || !user) { %>
+                <a href="/auth/login?redirect=/cabanas" class="btn btn-primary">Inicia Sesión para Reservar</a>
+            <% } else { %>
+                <span class="btn btn-secondary" style="opacity: 0.6; cursor: not-allowed;">Solo para Clientes</span>
             <% } %>
         </div>
     </div>

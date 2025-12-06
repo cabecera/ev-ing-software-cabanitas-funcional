@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const observacionClienteController = require('../controllers/observacionClienteController');
-const { requireAuth, requireAdminOrEncargado } = require('../middleware/auth');
+const { requireAuth, requireAdminOrEncargado, requireAdmin } = require('../middleware/auth');
 
 // Listar observaciones (admin y encargado)
 router.get('/', requireAuth, requireAdminOrEncargado, observacionClienteController.list);
@@ -20,6 +20,9 @@ router.get('/crear', requireAuth, requireAdminOrEncargado, observacionClienteCon
 
 // Crear observación
 router.post('/crear', requireAuth, requireAdminOrEncargado, observacionClienteController.create);
+
+// Eliminar observación (solo admin) - Ruta específica antes de rutas con parámetros genéricos
+router.post('/eliminar/:id', requireAuth, requireAdmin, observacionClienteController.delete);
 
 module.exports = router;
 

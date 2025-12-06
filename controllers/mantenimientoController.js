@@ -280,46 +280,93 @@ const mantenimientoController = {
     try {
       const { id } = req.params;
       const { trabajadorId } = req.body;
-      const userId = req.session.user.id;
+      const userId = req.session.user?.id;
 
-      const mantenimiento = await Mantenimiento.findByPk(id, { transaction });
+      if (!userId) {
+        await transaction.rollback();
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+
+      // Validar que trabajadorId esté presente si se está asignando
+      if (!trabajadorId || trabajadorId === '' || trabajadorId === 'null') {
+        await transaction.rollback();
+        return res.status(400).json({ error: 'Debe seleccionar un trabajador' });
+      }
+
+      const trabajadorIdInt = parseInt(trabajadorId);
+      if (isNaN(trabajadorIdInt)) {
+        await transaction.rollback();
+        return res.status(400).json({ error: 'ID de trabajador inválido' });
+      }
+
+      const mantenimiento = await Mantenimiento.findByPk(id, {
+        transaction,
+        include: [
+          { model: Cabana, as: 'cabana', required: false },
+          { model: Implemento, as: 'implemento', required: false }
+        ]
+      });
+
       if (!mantenimiento) {
         await transaction.rollback();
         return res.status(404).json({ error: 'Mantenimiento no encontrado' });
       }
 
       // Validar trabajador
-      if (trabajadorId) {
-        const trabajador = await User.findByPk(trabajadorId, { transaction });
-        if (!trabajador || trabajador.role !== 'trabajador' || !trabajador.activo) {
-          await transaction.rollback();
-          return res.status(400).json({ error: 'Trabajador no válido o inactivo' });
-        }
+      const trabajador = await User.findByPk(trabajadorIdInt, { transaction });
+      if (!trabajador) {
+        await transaction.rollback();
+        return res.status(400).json({ error: 'Trabajador no encontrado' });
       }
 
-      await mantenimiento.update({ trabajadorId: trabajadorId ? parseInt(trabajadorId) : null }, { transaction });
+      if (trabajador.role !== 'trabajador') {
+        await transaction.rollback();
+        return res.status(400).json({ error: 'El usuario seleccionado no es un trabajador' });
+      }
+
+      if (!trabajador.activo) {
+        await transaction.rollback();
+        return res.status(400).json({ error: 'El trabajador está inactivo' });
+      }
+
+      // Actualizar mantenimiento con el trabajador asignado
+      await mantenimiento.update({ trabajadorId: trabajadorIdInt }, { transaction });
+
+      // Obtener nombre del objeto (cabana o implemento) dentro de la transacción
+      let nombreObjeto = 'Objeto';
+      if (mantenimiento.cabanaId) {
+        const cabana = await Cabana.findByPk(mantenimiento.cabanaId, { transaction });
+        nombreObjeto = cabana ? cabana.nombre : 'Cabaña';
+      } else if (mantenimiento.implementoId) {
+        const implemento = await Implemento.findByPk(mantenimiento.implementoId, { transaction });
+        nombreObjeto = implemento ? implemento.nombre : 'Implemento';
+      }
 
       // Crear o actualizar TareaTrabajador
-      let tarea = await TareaTrabajador.findOne({ where: { mantenimientoId: mantenimiento.id }, transaction });
+      let tarea = await TareaTrabajador.findOne({
+        where: { mantenimientoId: mantenimiento.id },
+        transaction
+      });
+
+      const descripcionTarea = `Mantenimiento ${mantenimiento.categoria || 'general'}: ${mantenimiento.tipo || 'Sin tipo'} - ${mantenimiento.descripcion || 'Sin descripción adicional'}`;
+
       if (tarea) {
+        // Actualizar tarea existente
         await tarea.update({
-          trabajadorId: parseInt(trabajadorId),
+          trabajadorId: trabajadorIdInt,
           asignadoPor: userId,
           estado: 'pendiente',
           fechaAsignacion: new Date()
         }, { transaction });
       } else {
-        const nombreObjeto = mantenimiento.cabanaId
-          ? await Cabana.findByPk(mantenimiento.cabanaId).then(c => c?.nombre || 'Cabaña')
-          : await Implemento.findByPk(mantenimiento.implementoId).then(i => i?.nombre || 'Implemento');
-
+        // Crear nueva tarea
         await TareaTrabajador.create({
-          trabajadorId: parseInt(trabajadorId),
+          trabajadorId: trabajadorIdInt,
           asignadoPor: userId,
           mantenimientoId: mantenimiento.id,
-          cabanaId: mantenimiento.cabanaId,
+          cabanaId: mantenimiento.cabanaId || null,
           tipo: 'mantenimiento',
-          descripcion: `Mantenimiento ${mantenimiento.categoria}: ${mantenimiento.tipo} - ${mantenimiento.descripcion || 'Sin descripción adicional'}`,
+          descripcion: descripcionTarea,
           estado: 'pendiente',
           fechaAsignacion: new Date()
         }, { transaction });
@@ -328,13 +375,14 @@ const mantenimientoController = {
       // Notificar al trabajador
       try {
         await crearNotificacion(
-          parseInt(trabajadorId),
+          trabajadorIdInt,
           'Nueva Tarea Asignada',
-          `Se te ha asignado una nueva tarea de mantenimiento: ${mantenimiento.tipo}`,
+          `Se te ha asignado una nueva tarea de mantenimiento: ${mantenimiento.tipo || 'Mantenimiento general'}`,
           'info'
         );
       } catch (notifError) {
         console.error('Error al notificar trabajador:', notifError);
+        // No fallar la asignación si falla la notificación
       }
 
       await transaction.commit();
@@ -342,7 +390,22 @@ const mantenimientoController = {
     } catch (error) {
       await transaction.rollback();
       console.error('Error al asignar trabajador:', error);
-      res.status(500).json({ error: error.message || 'Error al asignar trabajador' });
+      console.error('Stack trace:', error.stack);
+
+      // Mensaje de error más específico
+      let errorMessage = 'Error al asignar trabajador. Por favor intenta nuevamente.';
+      if (error.name === 'SequelizeValidationError') {
+        errorMessage = 'Error de validación: ' + error.errors.map(e => e.message).join(', ');
+      } else if (error.name === 'SequelizeDatabaseError') {
+        errorMessage = 'Error de base de datos al asignar trabajador';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      res.status(500).json({
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   },
 

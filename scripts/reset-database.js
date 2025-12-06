@@ -8,6 +8,7 @@ const db = require('../models');
 
 // Orden de eliminación respetando las foreign keys
 const TABLES_TO_TRUNCATE = [
+  'observaciones_clientes',
   'notificaciones',
   'incidentes',
   'encuesta_satisfaccions',

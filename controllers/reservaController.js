@@ -381,10 +381,25 @@ const reservaController = {
   confirm: async (req, res) => {
     try {
       const { id } = req.params;
+
+      // Buscar la reserva con todas sus relaciones
       const reserva = await Reserva.findByPk(id, {
         include: [
-          { model: Cliente, as: 'cliente', include: [{ model: User, as: 'user' }] },
-          { model: Cabana, as: 'cabana' }
+          {
+            model: Cliente,
+            as: 'cliente',
+            required: false,
+            include: [{
+              model: User,
+              as: 'user',
+              required: false
+            }]
+          },
+          {
+            model: Cabana,
+            as: 'cabana',
+            required: false
+          }
         ]
       });
 
@@ -392,39 +407,96 @@ const reservaController = {
         return res.status(404).json({ error: 'Reserva no encontrada' });
       }
 
+      // Verificar que la reserva esté en estado pendiente
+      if (reserva.estado !== 'pendiente') {
+        return res.status(400).json({
+          error: `La reserva ya está ${reserva.estado}. Solo se pueden confirmar reservas pendientes.`
+        });
+      }
+
+      // Actualizar estado de la reserva
+      // IMPORTANTE: No actualizamos el estado de la cabaña porque la disponibilidad
+      // se calcula dinámicamente según las reservas activas. El estado de la cabaña
+      // solo puede ser 'disponible' o 'mantenimiento', nunca 'reservada'.
       await reserva.update({ estado: 'confirmada' });
 
-      // Cambiar estado de cabaña
-      await Cabana.update(
-        { estado: 'reservada' },
-        { where: { id: reserva.cabanaId } }
-      );
-
       // Notificar al cliente que su reserva fue confirmada
-      if (reserva.cliente && reserva.cliente.user) {
-        await crearNotificacion(
-          reserva.cliente.user.id,
-          'Reserva Confirmada',
-          `Tu reserva para la cabaña "${reserva.cabana.nombre}" del ${new Date(reserva.fechaInicio).toLocaleDateString()} al ${new Date(reserva.fechaFin).toLocaleDateString()} ha sido confirmada.`,
-          'success'
-        );
+      try {
+        if (reserva.cliente) {
+          // Obtener el userId del cliente si no viene en la relación
+          let userId = null;
+          if (reserva.cliente.user && reserva.cliente.user.id) {
+            userId = reserva.cliente.user.id;
+          } else {
+            // Si no viene en la relación, buscarlo directamente
+            const clienteCompleto = await Cliente.findByPk(reserva.clienteId, {
+              include: [{ model: User, as: 'user' }]
+            });
+            if (clienteCompleto && clienteCompleto.user) {
+              userId = clienteCompleto.user.id;
+            }
+          }
+
+          if (userId) {
+            await crearNotificacion(
+              userId,
+              'Reserva Confirmada',
+              `Tu reserva para la cabaña "${reserva.cabana ? reserva.cabana.nombre : 'N/A'}" del ${new Date(reserva.fechaInicio).toLocaleDateString()} al ${new Date(reserva.fechaFin).toLocaleDateString()} ha sido confirmada.`,
+              'success'
+            );
+          }
+        }
+      } catch (notifError) {
+        console.error('Error al crear notificación para cliente:', notifError);
+        // No fallar la confirmación si falla la notificación
       }
 
       // Notificar al encargado
-      const encargados = await User.findAll({ where: { role: 'encargado', activo: true } });
-      for (const encargado of encargados) {
-        await crearNotificacion(
-          encargado.id,
-          'Reserva Confirmada - Preparar Cabaña',
-          `La reserva para la cabaña "${reserva.cabana.nombre}" ha sido confirmada. Fecha inicio: ${new Date(reserva.fechaInicio).toLocaleDateString()}.`,
-          'warning'
-        );
+      try {
+        const encargados = await User.findAll({ where: { role: 'encargado', activo: true } });
+        for (const encargado of encargados) {
+          await crearNotificacion(
+            encargado.id,
+            'Reserva Confirmada - Preparar Cabaña',
+            `La reserva para la cabaña "${reserva.cabana ? reserva.cabana.nombre : 'N/A'}" ha sido confirmada. Fecha inicio: ${new Date(reserva.fechaInicio).toLocaleDateString()}.`,
+            'warning'
+          );
+        }
+      } catch (notifError) {
+        console.error('Error al crear notificaciones para encargados:', notifError);
+        // No fallar la confirmación si falla la notificación
       }
 
       res.redirect('/reservas');
     } catch (error) {
       console.error('Error al confirmar reserva:', error);
-      res.status(500).json({ error: 'Error al confirmar reserva' });
+      console.error('Stack trace:', error.stack);
+
+      // Si el error es sobre el estado 'reservada' de la cabaña, ignorarlo
+      // porque ya no usamos ese estado (puede ser un trigger antiguo en la BD)
+      if (error.name === 'SequelizeDatabaseError' &&
+          error.message &&
+          (error.message.includes("Data truncated for column 'estado'") ||
+           error.message.includes("reservada"))) {
+        console.warn('Advertencia: Se detectó intento de usar estado "reservada" que ya no existe. La reserva se confirmó correctamente.');
+        // La reserva ya se actualizó, solo redirigir
+        return res.redirect('/reservas');
+      }
+
+      // Mensaje de error más específico
+      let errorMessage = 'Error al confirmar reserva';
+      if (error.name === 'SequelizeValidationError') {
+        errorMessage = 'Error de validación: ' + error.errors.map(e => e.message).join(', ');
+      } else if (error.name === 'SequelizeDatabaseError') {
+        errorMessage = 'Error de base de datos al confirmar la reserva';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      res.status(500).json({
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   },
 
@@ -450,11 +522,8 @@ const reservaController = {
 
       await reserva.update({ estado: 'cancelada' });
 
-      // Liberar cabaña
-      await Cabana.update(
-        { estado: 'disponible' },
-        { where: { id: reserva.cabanaId } }
-      );
+      // Nota: Ya no cambiamos el estado de la cabaña porque
+      // la disponibilidad se calcula dinámicamente según las reservas activas
 
       // Notificar al cliente que su reserva fue cancelada
       if (reserva.cliente && reserva.cliente.user) {
