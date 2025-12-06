@@ -2,26 +2,20 @@
 admin@cabanitas.com
 admin123
 
-
 encargado@cabanitas.com
 encargado123
-
 
 cliente@example.com
 cliente123
 
-
 trabajador1@cabanitas.com
 trabajadro123
-
 
 trabajador2@cabanitas.com
 trabajador123
 
-
 carlos2@test.cl
 carlos123
-
 
 test@test.cl
 test

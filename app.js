@@ -119,6 +119,7 @@ app.use('/encuestas', encuestaRoutes);
 app.use('/incidentes', incidenteRoutes);
 app.use('/trabajador', trabajadorRoutes);
 app.use('/checkin', checkinRoutes);
+app.use('/observaciones', require('./routes/observaciones'));
 
 // Importar middleware de manejo de errores
 const { errorHandler, notFoundHandler, asyncHandler } = require('./middleware/errorHandler');
@@ -147,6 +148,24 @@ async function startServer() {
     try {
       await sequelize.authenticate();
       console.log('Conexión a la base de datos establecida correctamente.');
+
+      // Iniciar job de alertas de reservas (RF5)
+      const { verificarReservasProximas } = require('./jobs/alertasReservas');
+
+      // Ejecutar inmediatamente al iniciar
+      verificarReservasProximas().catch(err => {
+        console.error('Error en verificación inicial de alertas:', err);
+      });
+
+      // Ejecutar diariamente a las 9:00 AM (cada 24 horas)
+      const INTERVALO_24_HORAS = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
+      setInterval(() => {
+        verificarReservasProximas().catch(err => {
+          console.error('Error en verificación periódica de alertas:', err);
+        });
+      }, INTERVALO_24_HORAS);
+
+      console.log('Job de alertas de reservas iniciado. Se ejecutará diariamente.');
     } catch (dbError) {
       console.error('ADVERTENCIA: No se pudo conectar a la base de datos:', dbError.message);
       console.log('El servidor continuará ejecutándose, pero algunas funcionalidades pueden no estar disponibles.');

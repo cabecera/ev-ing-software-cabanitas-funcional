@@ -61,13 +61,34 @@ const implementoController = {
       }
 
       const nuevoStockTotal = parseInt(stockTotal);
+
+      // Validar que el stock total no sea negativo
+      if (isNaN(nuevoStockTotal) || nuevoStockTotal < 0) {
+        return res.status(400).json({ error: 'El stock total debe ser un número mayor o igual a 0' });
+      }
+
       const diferencia = nuevoStockTotal - implemento.stockTotal;
+      const nuevoStockDisponible = implemento.stockDisponible + diferencia;
+
+      // Validar que el stock disponible no sea negativo
+      if (nuevoStockDisponible < 0) {
+        return res.status(400).json({
+          error: `No se puede reducir el stock total. El stock disponible actual (${implemento.stockDisponible}) no permite reducir ${Math.abs(diferencia)} unidades. Stock disponible mínimo requerido: ${Math.abs(diferencia)}`
+        });
+      }
+
+      // Validar que el stock disponible no exceda el stock total
+      if (nuevoStockDisponible > nuevoStockTotal) {
+        return res.status(400).json({
+          error: `El stock disponible (${nuevoStockDisponible}) no puede ser mayor que el stock total (${nuevoStockTotal})`
+        });
+      }
 
       await implemento.update({
         nombre,
         descripcion: descripcion || null,
         stockTotal: nuevoStockTotal,
-        stockDisponible: implemento.stockDisponible + diferencia,
+        stockDisponible: nuevoStockDisponible,
         precioPrestamo: precioPrestamo ? parseFloat(precioPrestamo) : 0
       });
 

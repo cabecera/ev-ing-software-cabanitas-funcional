@@ -9,16 +9,50 @@
 
 <%
 // Preparar datos de implementos para JavaScript
-const implementosData = implementos.map(impl => ({
-    id: impl.id,
-    nombre: impl.nombre,
-    precioPrestamo: parseFloat(impl.precioPrestamo || 0),
-    stockDisponible: impl.stockDisponible
-}));
+const implementosData = (implementos && Array.isArray(implementos))
+    ? implementos.map(impl => ({
+        id: impl.id,
+        nombre: impl.nombre,
+        precioPrestamo: parseFloat(impl.precioPrestamo || 0),
+        stockDisponible: impl.stockDisponible
+    }))
+    : [];
 %>
 
 <script>
     const implementosData = <%- JSON.stringify(implementosData) %>;
+
+    function actualizarMaxCantidad() {
+        const implementoId = parseInt(document.getElementById('implementoId').value);
+        const cantidadInput = document.getElementById('cantidad');
+        const errorStock = document.getElementById('errorStock');
+
+        if (implementoId) {
+            const implemento = implementosData.find(impl => impl.id === implementoId);
+            if (implemento) {
+                cantidadInput.setAttribute('max', implemento.stockDisponible);
+                cantidadInput.setAttribute('placeholder', `Máximo: ${implemento.stockDisponible} unidades`);
+
+                // Si la cantidad actual excede el stock, ajustarla
+                const cantidadActual = parseInt(cantidadInput.value) || 0;
+                if (cantidadActual > implemento.stockDisponible) {
+                    cantidadInput.value = implemento.stockDisponible;
+                    if (errorStock) {
+                        errorStock.textContent = `La cantidad máxima disponible es ${implemento.stockDisponible} unidades.`;
+                        errorStock.style.display = 'block';
+                    }
+                } else if (errorStock) {
+                    errorStock.style.display = 'none';
+                }
+            }
+        } else {
+            cantidadInput.removeAttribute('max');
+            cantidadInput.removeAttribute('placeholder');
+            if (errorStock) {
+                errorStock.style.display = 'none';
+            }
+        }
+    }
 
     function calcularMontoTotal() {
         const implementoId = parseInt(document.getElementById('implementoId').value);
@@ -26,10 +60,22 @@ const implementosData = implementos.map(impl => ({
         const montoTotalSpan = document.getElementById('montoTotal');
         const seccionPago = document.getElementById('seccionPago');
         const metodoPagoSelect = document.getElementById('metodoPago');
+        const errorStock = document.getElementById('errorStock');
 
         if (implementoId && cantidad > 0) {
             const implemento = implementosData.find(impl => impl.id === implementoId);
             if (implemento) {
+                // Validar que la cantidad no exceda el stock disponible
+                if (cantidad > implemento.stockDisponible) {
+                    if (errorStock) {
+                        errorStock.textContent = `No puedes solicitar más de ${implemento.stockDisponible} unidades. Stock disponible: ${implemento.stockDisponible}`;
+                        errorStock.style.display = 'block';
+                    }
+                    return;
+                } else if (errorStock) {
+                    errorStock.style.display = 'none';
+                }
+
                 const montoTotal = implemento.precioPrestamo * cantidad;
                 montoTotalSpan.textContent = '$' + montoTotal.toLocaleString();
 
@@ -55,10 +101,35 @@ const implementosData = implementos.map(impl => ({
     function validarFormulario(e) {
         const implementoId = parseInt(document.getElementById('implementoId').value);
         const cantidad = parseInt(document.getElementById('cantidad').value) || 0;
+        const errorStock = document.getElementById('errorStock');
+
+        if (!implementoId) {
+            e.preventDefault();
+            alert('Debe seleccionar un implemento');
+            return false;
+        }
+
+        if (cantidad <= 0) {
+            e.preventDefault();
+            alert('La cantidad debe ser mayor a 0');
+            return false;
+        }
 
         if (implementoId && cantidad > 0) {
             const implemento = implementosData.find(impl => impl.id === implementoId);
             if (implemento) {
+                // Validar que la cantidad no exceda el stock disponible
+                if (cantidad > implemento.stockDisponible) {
+                    e.preventDefault();
+                    if (errorStock) {
+                        errorStock.textContent = `No puedes solicitar más de ${implemento.stockDisponible} unidades. Stock disponible: ${implemento.stockDisponible}`;
+                        errorStock.style.display = 'block';
+                    } else {
+                        alert(`No puedes solicitar más de ${implemento.stockDisponible} unidades. Stock disponible: ${implemento.stockDisponible}`);
+                    }
+                    return false;
+                }
+
                 const montoTotal = implemento.precioPrestamo * cantidad;
                 const metodoPago = document.getElementById('metodoPago').value;
 
@@ -74,10 +145,22 @@ const implementosData = implementos.map(impl => ({
 
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.querySelector('form');
-        document.getElementById('implementoId').addEventListener('change', calcularMontoTotal);
-        document.getElementById('cantidad').addEventListener('input', calcularMontoTotal);
-        form.addEventListener('submit', validarFormulario);
-        calcularMontoTotal();
+        const implementoSelect = document.getElementById('implementoId');
+        const cantidadInput = document.getElementById('cantidad');
+
+        if (form && implementoSelect && cantidadInput) {
+            implementoSelect.addEventListener('change', function() {
+                actualizarMaxCantidad();
+                calcularMontoTotal();
+            });
+
+            cantidadInput.addEventListener('input', calcularMontoTotal);
+            cantidadInput.addEventListener('change', calcularMontoTotal);
+
+            form.addEventListener('submit', validarFormulario);
+            actualizarMaxCantidad();
+            calcularMontoTotal();
+        }
     });
 </script>
 
@@ -104,6 +187,7 @@ const implementosData = implementos.map(impl => ({
     <div class="form-group">
         <label for="cantidad">Cantidad:</label>
         <input type="number" id="cantidad" name="cantidad" min="1" required>
+        <div id="errorStock" class="alert alert-error" style="display: none; margin-top: 0.5rem;"></div>
     </div>
 
     <!-- Sección de Pago -->

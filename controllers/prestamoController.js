@@ -173,6 +173,61 @@ const prestamoController = {
       transaction = await db.sequelize.transaction();
 
       try {
+        // Verificar stock nuevamente dentro de la transacción para evitar condiciones de carrera
+        // Usar lock para evitar condiciones de carrera
+        const implementoActualizado = await Implemento.findByPk(implementoId, {
+          lock: true,
+          transaction
+        });
+
+        if (!implementoActualizado) {
+          throw new Error('Implemento no encontrado');
+        }
+
+        // Validar stock disponible nuevamente dentro de la transacción
+        if (implementoActualizado.stockDisponible < cantidadSolicitada) {
+          await transaction.rollback();
+          console.error('Error: Stock insuficiente en transacción', {
+            disponible: implementoActualizado.stockDisponible,
+            solicitado: cantidadSolicitada
+          });
+          const implementos = await Implemento.findAll({
+            where: {
+              stockDisponible: {
+                [require('sequelize').Op.gt]: 0
+              }
+            },
+            order: [['nombre', 'ASC']]
+          });
+          return res.render('prestamos/create', {
+            error: `No hay suficiente stock disponible. Stock actual: ${implementoActualizado.stockDisponible}`,
+            implementos
+          });
+        }
+
+        // Validar que el stock disponible no quede negativo
+        const nuevoStockDisponible = implementoActualizado.stockDisponible - cantidadSolicitada;
+        if (nuevoStockDisponible < 0) {
+          await transaction.rollback();
+          console.error('Error: Stock disponible quedaría negativo', {
+            disponible: implementoActualizado.stockDisponible,
+            solicitado: cantidadSolicitada,
+            resultado: nuevoStockDisponible
+          });
+          const implementos = await Implemento.findAll({
+            where: {
+              stockDisponible: {
+                [require('sequelize').Op.gt]: 0
+              }
+            },
+            order: [['nombre', 'ASC']]
+          });
+          return res.render('prestamos/create', {
+            error: `No hay suficiente stock disponible. Stock actual: ${implementoActualizado.stockDisponible}`,
+            implementos
+          });
+        }
+
         // Crear préstamo
         console.log('Creando préstamo con datos:', { clienteId, implementoId, cantidad: cantidadSolicitada });
         const prestamo = await PrestamoImplemento.create({
@@ -185,8 +240,8 @@ const prestamoController = {
         console.log('Préstamo creado:', prestamo.id);
 
         // Reducir stock
-        await implemento.update({
-          stockDisponible: implemento.stockDisponible - cantidadSolicitada
+        await implementoActualizado.update({
+          stockDisponible: nuevoStockDisponible
         }, { transaction });
 
         // Crear pago si hay monto

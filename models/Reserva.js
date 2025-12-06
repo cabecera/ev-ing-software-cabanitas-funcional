@@ -55,6 +55,7 @@ module.exports = (sequelize, DataTypes) => {
     Reserva.hasOne(models.EncuestaSatisfaccion, { foreignKey: 'reservaId', as: 'encuesta' });
     Reserva.hasMany(models.Incidente, { foreignKey: 'reservaId', as: 'incidentes' });
     Reserva.hasOne(models.EntregaCabana, { foreignKey: 'reservaId', as: 'entrega' });
+    Reserva.hasMany(models.ObservacionCliente, { foreignKey: 'reservaId', as: 'observaciones' });
   };
 
   return Reserva;

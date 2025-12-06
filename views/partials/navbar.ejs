@@ -11,11 +11,13 @@
                     <li><a href="/mantenimientos">Mantenimientos</a></li>
                     <li><a href="/reportes">Reportes</a></li>
                     <li><a href="/implementos">Implementos</a></li>
+                    <li><a href="/observaciones">Observaciones</a></li>
                     <li><a href="/users">Usuarios</a></li>
                 <% } else if (user.role === 'encargado') { %>
                     <li><a href="/dashboard/encargado">Dashboard</a></li>
                     <li><a href="/encargado/reservas-confirmadas">Reservas Confirmadas</a></li>
                     <li><a href="/encargado/preparaciones">Preparaciones</a></li>
+                    <li><a href="/observaciones">Observaciones</a></li>
                 <% } else if (user.role === 'trabajador') { %>
                     <li><a href="/trabajador/tareas">Mis Tareas</a></li>
                 <% } else { %>

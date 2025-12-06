@@ -1,0 +1,162 @@
+<%- include('../partials/header', { title: 'Registrar Observación de Cliente' }) %>
+<%- include('../partials/navbar') %>
+
+<h1>Registrar Observación de Cliente</h1>
+
+<% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-error"><%= error %></div>
+<% } %>
+
+<form method="POST" action="/observaciones/crear" class="form">
+    <div class="form-group">
+        <label for="clienteId">Cliente:</label>
+        <% if (typeof cliente !== 'undefined' && cliente) { %>
+            <input type="hidden" name="clienteId" value="<%= cliente.id %>">
+            <p><strong><%= cliente.nombre %> <%= cliente.apellido %></strong></p>
+        <% } else if (typeof todosLosClientes !== 'undefined' && todosLosClientes && todosLosClientes.length > 0) { %>
+            <select id="clienteId" name="clienteId" required>
+                <option value="">Seleccione un cliente</option>
+                <% todosLosClientes.forEach(cli => { %>
+                    <option value="<%= cli.id %>"><%= cli.nombre %> <%= cli.apellido %></option>
+                <% }); %>
+            </select>
+        <% } else { %>
+            <input type="number" id="clienteId" name="clienteId" required placeholder="ID del cliente">
+            <small>Ingrese el ID del cliente</small>
+        <% } %>
+    </div>
+
+    <div class="form-group">
+        <label for="reservaId">Reserva (opcional):</label>
+        <% if (typeof reserva !== 'undefined' && reserva) { %>
+            <input type="hidden" name="reservaId" value="<%= reserva.id %>">
+            <p><strong>Reserva #<%= reserva.id %></strong> - <%= reserva.cabana ? reserva.cabana.nombre : 'N/A' %></p>
+            <p><small>Fechas: <%= new Date(reserva.fechaInicio).toLocaleDateString() %> - <%= new Date(reserva.fechaFin).toLocaleDateString() %></small></p>
+        <% } else { %>
+            <select id="reservaId" name="reservaId" <% if (typeof cliente === 'undefined' || !cliente) { %>disabled<% } %>>
+                <% if (typeof reservas !== 'undefined' && reservas && reservas.length > 0) { %>
+                    <option value="">Sin reserva específica</option>
+                    <% reservas.forEach(res => { %>
+                        <option value="<%= res.id %>">
+                            Reserva #<%= res.id %> - <%= res.cabana ? res.cabana.nombre : 'N/A' %>
+                            (<%= new Date(res.fechaInicio).toLocaleDateString() %> - <%= new Date(res.fechaFin).toLocaleDateString() %>)
+                        </option>
+                    <% }); %>
+                <% } else if (typeof cliente !== 'undefined' && cliente) { %>
+                    <option value="">Cargando reservas...</option>
+                <% } else { %>
+                    <option value="">Primero seleccione un cliente</option>
+                <% } %>
+            </select>
+            <small>Opcional: Si la observación está relacionada con una reserva específica, seleccione una reserva del cliente</small>
+        <% } %>
+    </div>
+
+    <div class="form-group">
+        <label for="tipo">Tipo de Observación:</label>
+        <select id="tipo" name="tipo" required>
+            <option value="observacion_general">Observación General</option>
+            <option value="comportamiento">Comportamiento</option>
+            <option value="incidencia">Incidencia</option>
+            <option value="recomendacion">Recomendación</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="severidad">Severidad:</label>
+        <select id="severidad" name="severidad">
+            <option value="baja">Baja</option>
+            <option value="media" selected>Media</option>
+            <option value="alta">Alta</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="fechaObservacion">Fecha de la Observación:</label>
+        <input type="date" id="fechaObservacion" name="fechaObservacion" value="<%= new Date().toISOString().split('T')[0] %>" required>
+    </div>
+
+    <div class="form-group">
+        <label for="descripcion">Descripción:</label>
+        <textarea id="descripcion" name="descripcion" rows="6" required placeholder="Describe la observación sobre el comportamiento, incidencia o situación del cliente durante la estadía..."></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Registrar Observación</button>
+    <a href="/observaciones" class="btn btn-secondary">Cancelar</a>
+</form>
+
+<script>
+    // Función para cargar reservas de un cliente
+    async function cargarReservas(clienteId, reservaSelect) {
+        if (!clienteId) {
+            reservaSelect.innerHTML = '<option value="">Primero seleccione un cliente</option>';
+            reservaSelect.disabled = true;
+            return;
+        }
+
+        // Mostrar loading
+        reservaSelect.disabled = true;
+        reservaSelect.innerHTML = '<option value="">Cargando reservas...</option>';
+
+        try {
+            const response = await fetch(`/observaciones/api-reservas/${clienteId}`);
+
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+
+            const reservas = await response.json();
+
+            // Verificar si hay un error en la respuesta
+            if (reservas.error) {
+                throw new Error(reservas.error);
+            }
+
+            reservaSelect.innerHTML = '<option value="">Sin reserva específica</option>';
+
+            if (reservas && reservas.length > 0) {
+                reservas.forEach(reserva => {
+                    const option = document.createElement('option');
+                    option.value = reserva.id;
+                    const fechaInicio = new Date(reserva.fechaInicio).toLocaleDateString();
+                    const fechaFin = new Date(reserva.fechaFin).toLocaleDateString();
+                    // Manejar tanto el objeto completo como el objeto serializado
+                    const cabanaNombre = (reserva.cabana && reserva.cabana.nombre) ? reserva.cabana.nombre : 'N/A';
+                    option.textContent = `Reserva #${reserva.id} - ${cabanaNombre} (${fechaInicio} - ${fechaFin})`;
+                    reservaSelect.appendChild(option);
+                });
+            } else {
+                reservaSelect.innerHTML = '<option value="">El cliente no tiene reservas</option>';
+            }
+
+            reservaSelect.disabled = false;
+        } catch (error) {
+            console.error('Error al cargar reservas:', error);
+            reservaSelect.innerHTML = `<option value="">Error: ${error.message}</option>`;
+            reservaSelect.disabled = false;
+        }
+    }
+
+    // Cargar reservas dinámicamente cuando se seleccione un cliente
+    const clienteSelect = document.getElementById('clienteId');
+    const reservaSelect = document.getElementById('reservaId');
+    const clientePreseleccionadoId = <% if (typeof cliente !== 'undefined' && cliente) { %><%= cliente.id %><% } else { %>null<% } %>;
+
+    if (clienteSelect && reservaSelect) {
+        // Si el cliente viene como select (no preseleccionado)
+        clienteSelect.addEventListener('change', function() {
+            cargarReservas(this.value, reservaSelect);
+        });
+
+        // Si ya hay un cliente seleccionado (preseleccionado), cargar sus reservas
+        if (clienteSelect.value) {
+            cargarReservas(clienteSelect.value, reservaSelect);
+        }
+    } else if (reservaSelect && clientePreseleccionadoId) {
+        // Si el cliente está preseleccionado pero no hay select de cliente (viene como hidden)
+        cargarReservas(clientePreseleccionadoId, reservaSelect);
+    }
+</script>
+
+<%- include('../partials/footer') %>
+

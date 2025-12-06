@@ -1,0 +1,82 @@
+<%- include('../partials/header', { title: 'Observaciones de Clientes' }) %>
+<%- include('../partials/navbar') %>
+
+<div class="page-header">
+    <h1>Observaciones de Clientes</h1>
+    <a href="/observaciones/crear" class="btn btn-primary">Nueva Observación</a>
+</div>
+
+<% if (typeof cliente !== 'undefined' && cliente) { %>
+    <div class="info-box">
+        <h2>Cliente: <%= cliente.nombre %> <%= cliente.apellido %></h2>
+        <a href="/observaciones" class="btn btn-secondary">Ver Todas las Observaciones</a>
+    </div>
+<% } %>
+
+<% if (typeof reserva !== 'undefined' && reserva) { %>
+    <div class="info-box">
+        <h2>Reserva #<%= reserva.id %></h2>
+        <p><strong>Cabaña:</strong> <%= reserva.cabana.nombre %></p>
+        <p><strong>Cliente:</strong> <%= reserva.cliente.nombre %> <%= reserva.cliente.apellido %></p>
+        <p><strong>Fechas:</strong> <%= new Date(reserva.fechaInicio).toLocaleDateString() %> - <%= new Date(reserva.fechaFin).toLocaleDateString() %></p>
+        <a href="/observaciones" class="btn btn-secondary">Ver Todas las Observaciones</a>
+    </div>
+<% } %>
+
+<% if (typeof observaciones !== 'undefined' && observaciones && observaciones.length > 0) { %>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Reserva</th>
+                    <th>Tipo</th>
+                    <th>Severidad</th>
+                    <th>Descripción</th>
+                    <th>Registrado Por</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% observaciones.forEach(obs => { %>
+                <tr>
+                    <td><%= new Date(obs.fechaObservacion).toLocaleDateString() %></td>
+                    <td>
+                        <%= obs.cliente ? obs.cliente.nombre + ' ' + obs.cliente.apellido : 'N/A' %>
+                        <br>
+                        <a href="/observaciones/cliente/<%= obs.clienteId %>" class="btn-link">Ver todas</a>
+                    </td>
+                    <td>
+                        <% if (obs.reserva) { %>
+                            #<%= obs.reserva.id %> - <%= obs.reserva.cabana ? obs.reserva.cabana.nombre : 'N/A' %>
+                            <br>
+                            <a href="/observaciones/reserva/<%= obs.reservaId %>" class="btn-link">Ver todas</a>
+                        <% } else { %>
+                            N/A
+                        <% } %>
+                    </td>
+                    <td>
+                        <span class="badge badge-<%= obs.tipo === 'comportamiento' ? 'warning' : obs.tipo === 'incidencia' ? 'error' : 'info' %>">
+                            <%= obs.tipo.replace('_', ' ') %>
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-<%= obs.severidad === 'alta' ? 'error' : obs.severidad === 'media' ? 'warning' : 'info' %>">
+                            <%= obs.severidad %>
+                        </span>
+                    </td>
+                    <td><%= obs.descripcion.length > 100 ? obs.descripcion.substring(0, 100) + '...' : obs.descripcion %></td>
+                    <td><%= obs.registrador ? obs.registrador.email : 'N/A' %></td>
+                </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+<% } else { %>
+    <div class="alert alert-info">
+        <p>No hay observaciones registradas.</p>
+    </div>
+<% } %>
+
+<%- include('../partials/footer') %>
+
