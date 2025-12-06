@@ -89,44 +89,96 @@ const authController = {
 
   // Procesar registro
   register: async (req, res) => {
+    // Usar transacción para asegurar atomicidad (si falla algo, se revierte todo)
+    const transaction = await db.sequelize.transaction();
+
     try {
       const { email, password, nombre, apellido, telefono, direccion, dni } = req.body;
 
+      // Validar campos requeridos
       if (!email || !password || !nombre || !apellido) {
+        await transaction.rollback();
         return res.render('auth/registro', { error: 'Email, contraseña, nombre y apellido son requeridos' });
       }
 
+      // Validar formato de email básico
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        await transaction.rollback();
+        return res.render('auth/registro', { error: 'El formato del email no es válido' });
+      }
+
+      // Validar longitud mínima de contraseña
+      if (password.length < 6) {
+        await transaction.rollback();
+        return res.render('auth/registro', { error: 'La contraseña debe tener al menos 6 caracteres' });
+      }
+
       // Verificar si el email ya existe
-      const existingUser = await User.findOne({ where: { email } });
+      const existingUser = await User.findOne({ where: { email }, transaction });
       if (existingUser) {
-        return res.render('auth/registro', { error: 'El email ya está registrado' });
+        await transaction.rollback();
+        return res.render('auth/registro', { error: 'El email ya está registrado. Por favor, usa otro email o inicia sesión.' });
+      }
+
+      // Si se proporciona DNI, verificar que no esté duplicado
+      if (dni) {
+        const existingCliente = await Cliente.findOne({ where: { dni }, transaction });
+        if (existingCliente) {
+          await transaction.rollback();
+          return res.render('auth/registro', { error: 'El DNI ya está registrado en el sistema' });
+        }
       }
 
       // Hash de la contraseña
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Crear usuario
+      // Crear usuario dentro de la transacción
       const user = await User.create({
         email,
         password: hashedPassword,
         role: 'cliente',
         activo: true
-      });
+      }, { transaction });
 
-      // Crear cliente
+      // Crear cliente dentro de la transacción
       await Cliente.create({
         userId: user.id,
-        nombre,
-        apellido,
-        telefono: telefono || null,
-        direccion: direccion || null,
-        dni: dni || null
-      });
+        nombre: nombre.trim(),
+        apellido: apellido.trim(),
+        telefono: telefono ? telefono.trim() : null,
+        direccion: direccion ? direccion.trim() : null,
+        dni: dni ? dni.trim() : null
+      }, { transaction });
+
+      // Si todo salió bien, confirmar la transacción
+      await transaction.commit();
 
       res.redirect('/auth/login?registered=true');
     } catch (error) {
+      // Si hay un error, revertir la transacción
+      await transaction.rollback();
+
       console.error('Error en registro:', error);
-      res.render('auth/registro', { error: 'Error al registrar. Intenta nuevamente.' });
+
+      // Mensajes de error más específicos según el tipo de error
+      let errorMessage = 'Error al registrar. Intenta nuevamente.';
+
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        if (error.fields && error.fields.includes('email')) {
+          errorMessage = 'El email ya está registrado. Por favor, usa otro email o inicia sesión.';
+        } else if (error.fields && error.fields.includes('dni')) {
+          errorMessage = 'El DNI ya está registrado en el sistema.';
+        } else {
+          errorMessage = 'Ya existe un registro con estos datos. Verifica tu información.';
+        }
+      } else if (error.name === 'SequelizeValidationError') {
+        errorMessage = 'Los datos proporcionados no son válidos. Verifica que todos los campos estén correctamente completados.';
+      } else if (error.name === 'SequelizeDatabaseError') {
+        errorMessage = 'Error de conexión con la base de datos. Por favor, intenta más tarde.';
+      }
+
+      res.render('auth/registro', { error: errorMessage });
     }
   },
 

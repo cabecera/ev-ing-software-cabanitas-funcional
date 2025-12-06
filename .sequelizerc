@@ -1,3 +1,20 @@
+/**
+ * Configuración de Sequelize CLI
+ *
+ * Define las rutas que Sequelize CLI utilizará para:
+ * - Configuración de base de datos
+ * - Modelos
+ * - Migraciones
+ * - Seeders
+ *
+ * Este archivo permite ejecutar comandos como:
+ * - sequelize-cli db:migrate
+ * - sequelize-cli db:seed:all
+ * - sequelize-cli model:generate
+ *
+ * @module .sequelizerc
+ */
+
 const path = require('path');
 
 module.exports = {
@@ -6,7 +23,3 @@ module.exports = {
   'seeders-path': path.resolve('seeders'),
   'migrations-path': path.resolve('migrations')
 };
-
-
-
-

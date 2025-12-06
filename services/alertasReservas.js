@@ -1,10 +1,13 @@
 /**
- * Job para verificar reservas próximas y generar alertas automáticas
+ * Servicio de Alertas Automáticas de Reservas
  * RF5: Alertar reserva próxima a validar
  *
- * Este job verifica:
- * - Reservas pendientes que inician en 1 semana (7 días)
- * - Reservas pendientes que inician en 72 horas (3 días)
+ * Este servicio verifica periódicamente las reservas pendientes y genera
+ * notificaciones automáticas para los administradores cuando:
+ * - Una reserva pendiente inicia en 1 semana (7 días)
+ * - Una reserva pendiente inicia en 72 horas (3 días)
+ *
+ * @module services/alertasReservas
  */
 
 const db = require('../models');
@@ -13,7 +16,8 @@ const { Op } = require('sequelize');
 const { crearNotificacion } = require('../controllers/notificacionController');
 
 /**
- * Verifica reservas próximas y crea notificaciones
+ * Verifica reservas próximas y crea notificaciones automáticas
+ * @returns {Promise<Object>} Objeto con el conteo de reservas encontradas
  */
 async function verificarReservasProximas() {
   try {
@@ -29,7 +33,7 @@ async function verificarReservasProximas() {
     setentaDosHoras.setDate(hoy.getDate() + 3);
     setentaDosHoras.setHours(23, 59, 59, 999);
 
-    // Reservas que inician en exactamente 7 días (1 semana)
+    // Buscar reservas pendientes que inician en exactamente 7 días (1 semana)
     const reservasUnaSemana = await Reserva.findAll({
       where: {
         estado: 'pendiente',
@@ -46,7 +50,7 @@ async function verificarReservasProximas() {
       ]
     });
 
-    // Reservas que inician en exactamente 3 días (72 horas)
+    // Buscar reservas pendientes que inician en exactamente 3 días (72 horas)
     const reservasSetentaDosHoras = await Reserva.findAll({
       where: {
         estado: 'pendiente',
@@ -63,7 +67,7 @@ async function verificarReservasProximas() {
       ]
     });
 
-    // Obtener todos los administradores
+    // Obtener todos los administradores activos
     const admins = await User.findAll({
       where: { role: 'admin', activo: true }
     });
@@ -110,6 +114,7 @@ async function verificarReservasProximas() {
 
 /**
  * Ejecutar verificación manualmente (útil para testing)
+ * @returns {Promise<Object>} Resultado de la verificación
  */
 async function ejecutarVerificacion() {
   try {

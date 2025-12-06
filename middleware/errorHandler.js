@@ -1,5 +1,20 @@
-// Middleware para manejo robusto de errores
+/**
+ * Middleware de Manejo de Errores
+ *
+ * Proporciona manejo centralizado de errores para toda la aplicación:
+ * - Detecta errores de base de datos
+ * - Genera mensajes de error apropiados según el tipo
+ * - Renderiza páginas de error amigables
+ * - Maneja errores 404 (página no encontrada)
+ *
+ * @module middleware/errorHandler
+ */
 
+/**
+ * Verifica si un error es relacionado con la base de datos
+ * @param {Error} error - Error a verificar
+ * @returns {boolean} true si es un error de base de datos
+ */
 function isDatabaseError(error) {
   if (!error) return false;
 
@@ -24,6 +39,11 @@ function isDatabaseError(error) {
   );
 }
 
+/**
+ * Obtiene el código de estado HTTP apropiado para un error
+ * @param {Error} error - Error a evaluar
+ * @returns {number} Código de estado HTTP
+ */
 function getErrorStatus(error) {
   if (error.status) return error.status;
   if (error.statusCode) return error.statusCode;
@@ -31,6 +51,12 @@ function getErrorStatus(error) {
   return 500;
 }
 
+/**
+ * Obtiene un mensaje de error amigable para el usuario
+ * @param {Error} error - Error a procesar
+ * @param {number} status - Código de estado HTTP
+ * @returns {string} Mensaje de error amigable
+ */
 function getErrorMessage(error, status) {
   if (isDatabaseError(error)) {
     return 'Error de conexión con la base de datos. Por favor, contacte al administrador o intente más tarde.';
@@ -52,19 +78,38 @@ function getErrorMessage(error, status) {
 }
 
 module.exports = {
-  // Middleware para capturar errores asíncronos
+  /**
+   * Wrapper para manejar funciones asíncronas y capturar errores automáticamente
+   * @param {Function} fn - Función asíncrona a envolver
+   * @returns {Function} Función middleware que captura errores
+   *
+   * @example
+   * router.get('/ruta', asyncHandler(async (req, res) => {
+   *   const data = await Model.findAll();
+   *   res.json(data);
+   * }));
+   */
   asyncHandler: (fn) => {
     return (req, res, next) => {
       Promise.resolve(fn(req, res, next)).catch(next);
     };
   },
 
-  // Middleware principal de manejo de errores
+  /**
+   * Middleware principal de manejo de errores
+   * Debe ser el último middleware en la cadena de Express
+   *
+   * @param {Error} err - Error capturado
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Función next
+   */
   errorHandler: (err, req, res, next) => {
     try {
       const status = getErrorStatus(err);
       const message = getErrorMessage(err, status);
 
+      // Log del error para debugging
       console.error('Error capturado:', {
         message: err.message,
         stack: err.stack,
@@ -79,7 +124,7 @@ module.exports = {
         return next(err);
       }
 
-      // Determinar si mostrar detalles técnicos
+      // Determinar si mostrar detalles técnicos (solo en desarrollo)
       const showDetails = process.env.NODE_ENV === 'development';
 
       res.status(status).render('error', {
@@ -95,7 +140,7 @@ module.exports = {
         is404: status === 404
       });
     } catch (renderError) {
-      // Si falla el render, enviar respuesta HTML básica
+      // Si falla el render, enviar respuesta HTML básica como fallback
       console.error('Error al renderizar página de error:', renderError);
       res.status(500).send(`
         <!DOCTYPE html>
@@ -120,7 +165,14 @@ module.exports = {
     }
   },
 
-  // Middleware para rutas no encontradas (404)
+  /**
+   * Middleware para rutas no encontradas (404)
+   * Debe ir antes del errorHandler pero después de todas las rutas
+   *
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Función next
+   */
   notFoundHandler: (req, res, next) => {
     try {
       res.status(404).render('error', {
@@ -152,8 +204,3 @@ module.exports = {
     }
   }
 };
-
-
-
-
-

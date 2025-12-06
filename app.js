@@ -1,3 +1,15 @@
+/**
+ * Aplicación Principal - Sistema de Gestión de Cabañas
+ *
+ * Este archivo configura e inicia el servidor Express, establece las conexiones
+ * a la base de datos, configura las sesiones, monta las rutas y maneja los errores.
+ *
+ * @module app
+ * @requires express
+ * @requires express-session
+ * @requires sequelize
+ */
+
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
@@ -8,13 +20,15 @@ const dbConfig = require('./config/database');
 const env = process.env.NODE_ENV || 'development';
 const config = dbConfig[env];
 
+// Configurar conexión a la base de datos con Sequelize
 const sequelize = new Sequelize(config.database, config.username, config.password, {
   host: config.host,
   dialect: config.dialect,
   logging: config.logging
 });
 
-// Importar rutas
+// ==================== IMPORTAR RUTAS ====================
+// Todas las rutas del sistema están organizadas por módulo funcional
 const authRoutes = require('./routes/auth');
 const cabanaRoutes = require('./routes/cabanas');
 const reservaRoutes = require('./routes/reservas');
@@ -35,18 +49,20 @@ const incidenteRoutes = require('./routes/incidentes');
 const trabajadorRoutes = require('./routes/trabajador');
 const checkinRoutes = require('./routes/checkin');
 
+// ==================== CONFIGURACIÓN DE EXPRESS ====================
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Middleware para parsear datos del cuerpo de las peticiones
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Configurar sesiones
+// ==================== CONFIGURACIÓN DE SESIONES ====================
+// Las sesiones se almacenan en la base de datos usando Sequelize
 const sessionStore = new SequelizeStore({
   db: sequelize,
-  checkExpirationInterval: 15 * 60 * 1000,
-  expiration: 24 * 60 * 60 * 1000
+  checkExpirationInterval: 15 * 60 * 1000, // Verificar sesiones expiradas cada 15 minutos
+  expiration: 24 * 60 * 60 * 1000 // Las sesiones expiran después de 24 horas
 });
 
 app.use(session({
@@ -55,34 +71,38 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000
+    httpOnly: true, // Prevenir acceso desde JavaScript (protección XSS)
+    secure: process.env.NODE_ENV === 'production', // Solo HTTPS en producción
+    maxAge: 24 * 60 * 60 * 1000 // 24 horas
   }
 }));
 
-// Crear tabla de sesiones si no existe
+// Sincronizar tabla de sesiones con la base de datos
 sessionStore.sync();
 
-// Configurar EJS
+// ==================== CONFIGURACIÓN DE VISTAS ====================
+// Motor de plantillas EJS para renderizar HTML dinámico
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Archivos estáticos
+// Archivos estáticos (CSS, imágenes, JavaScript del cliente)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Middleware para pasar datos del usuario a las vistas
+// ==================== MIDDLEWARE GLOBAL ====================
+// Pasar datos del usuario autenticado a todas las vistas
 app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   res.locals.isAuthenticated = !!req.session.user;
   next();
 });
 
-// Rutas públicas
+// ==================== RUTAS PÚBLICAS ====================
+// Redirigir según el rol del usuario o al login si no está autenticado
 app.get('/', (req, res, next) => {
   try {
     if (req.session && req.session.user) {
       const role = req.session.user.role;
+      // Redirigir al dashboard correspondiente según el rol
       if (role === 'admin') {
         return res.redirect('/dashboard/admin');
       } else if (role === 'encargado') {
@@ -99,7 +119,8 @@ app.get('/', (req, res, next) => {
   }
 });
 
-// Montar rutas
+// ==================== MONTAR RUTAS ====================
+// Todas las rutas están protegidas por middleware de autenticación en sus respectivos archivos
 app.use('/auth', authRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/cabanas', cabanaRoutes);
@@ -121,19 +142,21 @@ app.use('/trabajador', trabajadorRoutes);
 app.use('/checkin', checkinRoutes);
 app.use('/observaciones', require('./routes/observaciones'));
 
+// ==================== MANEJO DE ERRORES ====================
 // Importar middleware de manejo de errores
 const { errorHandler, notFoundHandler, asyncHandler } = require('./middleware/errorHandler');
 
 // Manejar rutas no encontradas (404) - debe ir ANTES del error handler
 app.use(notFoundHandler);
 
-// Manejo de errores - debe ir al final
+// Manejo de errores - debe ir al final de todas las rutas
 app.use(errorHandler);
 
-// Manejar errores no capturados del proceso
+// ==================== MANEJO DE ERRORES NO CAPTURADOS ====================
+// Prevenir que el servidor se caiga por errores no manejados
 process.on('uncaughtException', (error) => {
   console.error('Excepción no capturada:', error);
-  // No terminar el proceso, solo logear
+  // No terminar el proceso, solo logear para mantener el servidor activo
 });
 
 process.on('unhandledRejection', (reason, promise) => {
@@ -141,7 +164,13 @@ process.on('unhandledRejection', (reason, promise) => {
   // No terminar el proceso, solo logear
 });
 
-// Inicializar base de datos y servidor
+// ==================== INICIALIZACIÓN DEL SERVIDOR ====================
+/**
+ * Inicia el servidor y configura los servicios en segundo plano
+ * - Conecta a la base de datos
+ * - Inicia el servicio de alertas automáticas de reservas (RF5)
+ * - Inicia el servidor HTTP
+ */
 async function startServer() {
   try {
     // Intentar conectar a la base de datos, pero no bloquear el servidor si falla
@@ -149,15 +178,16 @@ async function startServer() {
       await sequelize.authenticate();
       console.log('Conexión a la base de datos establecida correctamente.');
 
-      // Iniciar job de alertas de reservas (RF5)
-      const { verificarReservasProximas } = require('./jobs/alertasReservas');
+      // ==================== SERVICIOS EN SEGUNDO PLANO ====================
+      // Iniciar servicio de alertas automáticas de reservas (RF5)
+      const { verificarReservasProximas } = require('./services/alertasReservas');
 
-      // Ejecutar inmediatamente al iniciar
+      // Ejecutar inmediatamente al iniciar para verificar reservas pendientes
       verificarReservasProximas().catch(err => {
         console.error('Error en verificación inicial de alertas:', err);
       });
 
-      // Ejecutar diariamente a las 9:00 AM (cada 24 horas)
+      // Ejecutar diariamente (cada 24 horas) para verificar reservas próximas
       const INTERVALO_24_HORAS = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
       setInterval(() => {
         verificarReservasProximas().catch(err => {
@@ -165,13 +195,14 @@ async function startServer() {
         });
       }, INTERVALO_24_HORAS);
 
-      console.log('Job de alertas de reservas iniciado. Se ejecutará diariamente.');
+      console.log('Servicio de alertas de reservas iniciado. Se ejecutará diariamente.');
     } catch (dbError) {
       console.error('ADVERTENCIA: No se pudo conectar a la base de datos:', dbError.message);
       console.log('El servidor continuará ejecutándose, pero algunas funcionalidades pueden no estar disponibles.');
       // El servidor seguirá corriendo, pero las rutas que necesiten DB mostrarán errores apropiados
     }
 
+    // Iniciar servidor HTTP
     app.listen(PORT, () => {
       console.log(`Servidor corriendo en http://localhost:${PORT}`);
       console.log('NOTA: El servidor está configurado para manejar errores sin caerse.');
@@ -190,4 +221,5 @@ async function startServer() {
   }
 }
 
+// Iniciar el servidor
 startServer();
