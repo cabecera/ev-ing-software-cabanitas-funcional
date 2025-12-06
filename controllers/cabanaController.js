@@ -37,7 +37,7 @@ const cabanaController = {
   // Crear cabaña (admin)
   create: async (req, res) => {
     try {
-      const { nombre, capacidad, precioNoche, descripcion, fotos } = req.body;
+      const { nombre, capacidad, precioNoche, descripcion } = req.body;
 
       if (!nombre || !capacidad || !precioNoche) {
         return       res.render('cabanas/create', {
@@ -51,7 +51,6 @@ const cabanaController = {
         capacidad: parseInt(capacidad),
         precioNoche: parseFloat(precioNoche),
         descripcion: descripcion || null,
-        fotos: fotos ? JSON.stringify(fotos.split(',')) : null,
         estado: 'disponible'
       });
 
@@ -132,7 +131,7 @@ const cabanaController = {
   update: async (req, res) => {
     try {
       const { id } = req.params;
-      const { nombre, capacidad, precioNoche, descripcion, estado, fotos } = req.body;
+      const { nombre, capacidad, precioNoche, descripcion, estado } = req.body;
 
       const cabana = await Cabana.findByPk(id);
       if (!cabana) {
@@ -148,8 +147,7 @@ const cabanaController = {
         capacidad: parseInt(capacidad),
         precioNoche: parseFloat(precioNoche),
         descripcion: descripcion || null,
-        estado: estado || cabana.estado,
-        fotos: fotos ? JSON.stringify(fotos.split(',')) : cabana.fotos
+        estado: estado || cabana.estado
       });
 
       res.redirect('/cabanas');
